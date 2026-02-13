@@ -368,7 +368,7 @@ export default function MyCardScreen() {
             <AnimatedPressable
               scaleDown={0.95}
               onPress={() => navigate('choose-method')}
-              style={[s.primaryBtn, { backgroundColor: colors.accent, marginTop: 20 }]}
+              style={[s.primaryBtn, { backgroundColor: colors.accent, marginTop: 20, alignSelf: 'stretch' }]}
             >
               <Text style={[s.primaryBtnText, { fontSize: fontSizes.base }]}>Get Started</Text>
             </AnimatedPressable>
@@ -414,8 +414,10 @@ export default function MyCardScreen() {
           onPress={() => { resetFormState(); navigate('choose-method'); }}
           style={[s.addBtn, { borderColor: colors.border }]}
         >
-          <Ionicons name="add" size={20} color={colors.accent} style={{ marginRight: 6 }} />
-          <Text style={[s.addBtnText, { color: colors.accent, fontSize: fontSizes.base }]}>Add Another Card</Text>
+          <View style={s.actionBtnInner}>
+            <Ionicons name="add" size={20} color={colors.accent} />
+            <Text style={[s.addBtnText, { color: colors.accent, fontSize: fontSizes.base }]}>Add Another Card</Text>
+          </View>
         </AnimatedPressable>
       </>
     );
@@ -521,6 +523,17 @@ export default function MyCardScreen() {
           </AnimatedPressable>
         </View>
 
+        <AnimatedPressable
+          scaleDown={0.95}
+          onPress={() => { resetFormState(); navigate('choose-method'); }}
+          style={[s.addBtn, { borderColor: colors.border }]}
+        >
+          <View style={s.actionBtnInner}>
+            <Ionicons name="add" size={20} color={colors.accent} />
+            <Text style={[s.addBtnText, { color: colors.accent, fontSize: fontSizes.base }]}>Add Another Card</Text>
+          </View>
+        </AnimatedPressable>
+
         <AnimatedPressable scaleDown={0.95} onPress={() => deleteCard(card)}
           style={[s.deleteBtn, { borderColor: colors.border }]}>
           <View style={s.actionBtnInner}>
@@ -555,13 +568,10 @@ export default function MyCardScreen() {
           style={[s.methodCard, { borderColor: colors.border }]}
         >
           <Ionicons name="camera-outline" size={32} color={colors.accent} />
-          <View style={s.methodInfo}>
-            <Text style={[s.methodTitle, { color: colors.text, fontSize: fontSizes.base }]}>Scan Your Card</Text>
-            <Text style={[s.methodSub, { color: colors.textMuted, fontSize: fontSizes.xs }]}>
-              Take a photo or choose from gallery
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+          <Text style={[s.methodTitle, { color: colors.text, fontSize: fontSizes.base }]}>Scan Your Card</Text>
+          <Text style={[s.methodSub, { color: colors.textMuted, fontSize: fontSizes.xs }]}>
+            Take a photo or choose from gallery
+          </Text>
         </AnimatedPressable>
 
         <AnimatedPressable
@@ -573,13 +583,10 @@ export default function MyCardScreen() {
           style={[s.methodCard, { borderColor: colors.border }]}
         >
           <Ionicons name="create-outline" size={32} color={colors.accent} />
-          <View style={s.methodInfo}>
-            <Text style={[s.methodTitle, { color: colors.text, fontSize: fontSizes.base }]}>Enter Manually</Text>
-            <Text style={[s.methodSub, { color: colors.textMuted, fontSize: fontSizes.xs }]}>
-              Type in your card details
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+          <Text style={[s.methodTitle, { color: colors.text, fontSize: fontSizes.base }]}>Enter Manually</Text>
+          <Text style={[s.methodSub, { color: colors.textMuted, fontSize: fontSizes.xs }]}>
+            Type in your card details
+          </Text>
         </AnimatedPressable>
       </View>
 
@@ -782,14 +789,12 @@ const s = StyleSheet.create({
   listCardName: { fontWeight: '600' },
   listCardCompany: { marginTop: 2 },
   addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1,
     borderStyle: 'dashed',
     marginTop: 4,
+    alignItems: 'center',
   },
   addBtnText: { fontWeight: '600' },
 
@@ -847,15 +852,13 @@ const s = StyleSheet.create({
 
   // Choose method
   methodCard: {
-    flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
     borderRadius: 14,
-    padding: 16,
+    padding: 20,
     marginBottom: 10,
   },
-  methodInfo: { flex: 1, marginLeft: 14 },
-  methodTitle: { fontWeight: '600' },
+  methodTitle: { fontWeight: '600', marginTop: 8 },
   methodSub: { marginTop: 2 },
 
   // Form
