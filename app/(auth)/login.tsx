@@ -329,9 +329,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   forgotRow: {
-    alignItems: 'flex-end',
-    marginBottom: 4,
-    marginTop: -4,
+    alignItems: 'center',
+    marginBottom: 12,
+    marginTop: 0,
   },
   forgotText: {
     fontSize: 14,

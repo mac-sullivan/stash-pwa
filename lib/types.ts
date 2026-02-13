@@ -56,6 +56,8 @@ export interface MyCard {
     linkedin?: string;
   } | null;
   notes: string | null;
+  card_image_url: string | null;
+  card_images: string[] | null;
   created_at: string;
   updated_at: string;
 }

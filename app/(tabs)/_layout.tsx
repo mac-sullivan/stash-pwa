@@ -166,8 +166,8 @@ function SettingsButton() {
               style={[styles.signOutBtn, { borderColor: colors.border }]}
             >
               <View style={styles.signOutRow}>
-                <Ionicons name="log-out-outline" size={18} color="#ef4444" style={{ marginRight: 6 }} />
-                <Text style={styles.signOutText}>Sign Out</Text>
+                <Ionicons name="log-out-outline" size={fontSizes.base} color="#ef4444" style={{ marginRight: 6 }} />
+                <Text style={[styles.signOutText, { fontSize: fontSizes.base }]}>Sign Out</Text>
               </View>
             </AnimatedPressable>
 
@@ -330,7 +330,6 @@ const styles = StyleSheet.create({
   signOutText: {
     color: '#ef4444',
     fontWeight: '600',
-    fontSize: 15,
   },
   doneBtn: {
     marginTop: 12,
@@ -340,6 +339,6 @@ const styles = StyleSheet.create({
   },
   doneBtnText: {
     color: '#fff',
-    fontWeight: '700',
+    fontWeight: '600',
   },
 });
