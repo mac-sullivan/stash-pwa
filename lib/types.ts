@@ -19,6 +19,7 @@ export interface ParsedCard {
 export interface StashCard {
   id: number;
   created_at: string;
+  user_id: string;
   name: string | null;
   company: string | null;
   phone: string | null;

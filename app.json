@@ -14,12 +14,15 @@
       "backgroundColor": "#0f0f14"
     },
     "ios": {
+      "bundleIdentifier": "com.macsullivan.stash",
       "supportsTablet": true,
+      "usesAppleSignIn": true,
       "infoPlist": {
         "NSCameraUsageDescription": "Stash needs camera access to scan business cards and QR codes."
       }
     },
     "android": {
+      "package": "com.macsullivan.stash",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0f0f14"
@@ -34,6 +37,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-apple-authentication",
       [
         "expo-camera",
         {

@@ -1,13 +1,15 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View, Text, Pressable, ScrollView, TextInput,
-  StyleSheet, Alert,
+  StyleSheet, Alert, Animated,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from 'expo-router';
 import { useTheme } from '@/lib/theme';
+import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { PRESET_CATEGORIES } from '@/lib/constants';
+import AnimatedPressable from '@/components/AnimatedPressable';
 
 interface FormData {
   name: string;
@@ -35,23 +37,35 @@ const EMPTY_FORM: FormData = {
 
 const FIELDS: { key: keyof FormData; label: string; placeholder: string; multiline?: boolean }[] = [
   { key: 'name', label: 'Name *', placeholder: 'Person or business name' },
-  { key: 'company', label: 'Company *', placeholder: 'Company name' },
-  { key: 'phone', label: 'Phone *', placeholder: '(555) 123-4567' },
-  { key: 'additionalPhone', label: 'Additional Phone *', placeholder: 'Secondary phone' },
-  { key: 'email', label: 'Email *', placeholder: 'email@example.com' },
-  { key: 'website', label: 'Website *', placeholder: 'www.example.com' },
-  { key: 'additionalWebsite', label: 'Additional Website *', placeholder: 'Secondary website' },
-  { key: 'address', label: 'Address *', placeholder: '123 Main St, City, State' },
-  { key: 'notes', label: 'Notes *', placeholder: 'Job title, tagline, other info...', multiline: true },
+  { key: 'company', label: 'Company', placeholder: 'Company name' },
+  { key: 'phone', label: 'Phone', placeholder: '(555) 123-4567' },
+  { key: 'additionalPhone', label: 'Additional Phone', placeholder: 'Secondary phone' },
+  { key: 'email', label: 'Email', placeholder: 'email@example.com' },
+  { key: 'website', label: 'Website', placeholder: 'www.example.com' },
+  { key: 'additionalWebsite', label: 'Additional Website', placeholder: 'Secondary website' },
+  { key: 'address', label: 'Address', placeholder: '123 Main St, City, State' },
+  { key: 'notes', label: 'Notes', placeholder: 'Job title, tagline, other info...', multiline: true },
 ];
 
 export default function ManualScreen() {
-  const { colors } = useTheme();
+  const { colors, fontSizes } = useTheme();
+  const { user } = useAuth();
   const [form, setForm] = useState<FormData>({ ...EMPTY_FORM });
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [customCategory, setCustomCategory] = useState('');
   const [allKnownCategories, setAllKnownCategories] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Mount fade-in + slide-up animation
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(24)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 450, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
+    ]).start();
+  }, [fadeAnim, slideAnim]);
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -91,9 +105,8 @@ export default function ManualScreen() {
   };
 
   const validate = (): boolean => {
-    const missing = FIELDS.filter(f => !form[f.key].trim()).map(f => f.label.replace(' *', ''));
-    if (missing.length > 0) {
-      Alert.alert('Missing Fields', `Please fill in:\n${missing.join(', ')}`);
+    if (!form.name.trim()) {
+      Alert.alert('Missing Name', 'Please fill in the Name field.');
       return false;
     }
     return true;
@@ -104,6 +117,7 @@ export default function ManualScreen() {
     setIsSaving(true);
     try {
       const { error } = await supabase.from('stash').insert([{
+        user_id: user!.id,
         name: form.name || null,
         company: form.company || null,
         phone: form.phone || null,
@@ -139,97 +153,104 @@ export default function ManualScreen() {
       contentContainerStyle={s.content}
       keyboardShouldPersistTaps="handled"
     >
-      <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-        <Text style={[s.cardTitle, { color: colors.text }]}>New Contact</Text>
-        <Text style={[s.subtitle, { color: colors.textMuted }]}>
-          All fields except categories are required
-        </Text>
+      <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+        <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+          <Text style={[s.cardTitle, { color: colors.text, fontSize: fontSizes.lg }]}>New Contact</Text>
+          <Text style={[s.subtitle, { color: colors.textMuted, fontSize: fontSizes.sm }]}>
+            Only name is required
+          </Text>
 
-        {FIELDS.map(({ key, label, placeholder, multiline }) => (
-          <View key={key} style={s.field}>
-            <Text style={[s.label, { color: colors.textMuted }]}>{label}</Text>
-            <TextInput
-              value={form[key]}
-              onChangeText={text => updateField(key, text)}
-              placeholder={placeholder}
-              placeholderTextColor={colors.textMuted}
-              multiline={multiline}
-              style={[s.input, {
-                backgroundColor: colors.inputBg,
-                borderColor: form[key].trim() ? colors.accent + '55' : colors.inputBorder,
-                color: colors.text,
-              }, multiline && s.inputMultiline]}
-            />
-          </View>
-        ))}
+          {FIELDS.map(({ key, label, placeholder, multiline }) => (
+            <View key={key} style={s.field}>
+              <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.xs }]}>{label}</Text>
+              <TextInput
+                value={form[key]}
+                onChangeText={text => updateField(key, text)}
+                placeholder={placeholder}
+                placeholderTextColor={colors.textMuted}
+                multiline={multiline}
+                style={[s.input, {
+                  backgroundColor: colors.inputBg,
+                  borderColor: form[key].trim() ? colors.accent + '55' : colors.inputBorder,
+                  color: colors.text,
+                  fontSize: fontSizes.base,
+                }, multiline && s.inputMultiline]}
+              />
+            </View>
+          ))}
 
-        {/* Categories */}
-        <View style={s.field}>
-          <Text style={[s.label, { color: colors.textMuted }]}>Categories (optional)</Text>
-          <View style={s.chipRow}>
-            {PRESET_CATEGORIES.map(cat => (
-              <Pressable key={cat} onPress={() => toggleCategory(cat)}
-                style={[s.chip, {
-                  backgroundColor: selectedCategories.includes(cat) ? colors.accent : colors.border,
-                }]}>
-                <Text style={[s.chipText, {
-                  color: selectedCategories.includes(cat) ? '#fff' : colors.textMuted,
-                }]}>{cat}</Text>
-              </Pressable>
-            ))}
-          </View>
-          {allCustom.length > 0 && (
-            <View style={[s.chipRow, { marginTop: 6 }]}>
-              {allCustom.map(cat => (
-                <Pressable key={cat} onPress={() => toggleCategory(cat)}
+          {/* Categories */}
+          <View style={s.field}>
+            <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.xs }]}>Categories (optional)</Text>
+            <View style={s.chipRow}>
+              {PRESET_CATEGORIES.map(cat => (
+                <AnimatedPressable key={cat} scaleDown={0.92} onPress={() => toggleCategory(cat)}
                   style={[s.chip, {
                     backgroundColor: selectedCategories.includes(cat) ? colors.accent : colors.border,
                   }]}>
                   <Text style={[s.chipText, {
                     color: selectedCategories.includes(cat) ? '#fff' : colors.textMuted,
+                    fontSize: fontSizes.xs,
                   }]}>{cat}</Text>
-                </Pressable>
+                </AnimatedPressable>
               ))}
             </View>
-          )}
-          <View style={[s.row, { marginTop: 8 }]}>
-            <TextInput
-              value={customCategory}
-              onChangeText={setCustomCategory}
-              onSubmitEditing={addCustomCategory}
-              placeholder="Custom category..."
-              placeholderTextColor={colors.textMuted}
-              style={[s.input, {
-                flex: 1,
-                backgroundColor: colors.inputBg,
-                borderColor: colors.inputBorder,
-                color: colors.text,
-              }]}
-            />
-            <Pressable onPress={addCustomCategory}
-              style={[s.smallBtn, { backgroundColor: colors.border }]}>
-              <Text style={[s.smallBtnText, { color: colors.text }]}>Add</Text>
-            </Pressable>
+            {allCustom.length > 0 && (
+              <View style={[s.chipRow, { marginTop: 6 }]}>
+                {allCustom.map(cat => (
+                  <AnimatedPressable key={cat} scaleDown={0.92} onPress={() => toggleCategory(cat)}
+                    style={[s.chip, {
+                      backgroundColor: selectedCategories.includes(cat) ? colors.accent : colors.border,
+                    }]}>
+                    <Text style={[s.chipText, {
+                      color: selectedCategories.includes(cat) ? '#fff' : colors.textMuted,
+                      fontSize: fontSizes.xs,
+                    }]}>{cat}</Text>
+                  </AnimatedPressable>
+                ))}
+              </View>
+            )}
+            <View style={[s.row, { marginTop: 8 }]}>
+              <TextInput
+                value={customCategory}
+                onChangeText={setCustomCategory}
+                onSubmitEditing={addCustomCategory}
+                placeholder="Custom category..."
+                placeholderTextColor={colors.textMuted}
+                style={[s.input, {
+                  flex: 1,
+                  backgroundColor: colors.inputBg,
+                  borderColor: colors.inputBorder,
+                  color: colors.text,
+                  fontSize: fontSizes.sm,
+                }]}
+              />
+              <AnimatedPressable onPress={addCustomCategory} scaleDown={0.92}
+                style={[s.smallBtn, { backgroundColor: colors.border }]}>
+                <Text style={[s.smallBtnText, { color: colors.text, fontSize: fontSizes.xs }]}>Add</Text>
+              </AnimatedPressable>
+            </View>
           </View>
+
+          {/* Actions */}
+          <AnimatedPressable
+            scaleDown={0.95}
+            onPress={save}
+            disabled={isSaving}
+            style={[s.primaryBtn, {
+              backgroundColor: isSaving ? colors.textMuted : colors.accent,
+              opacity: isSaving ? 0.7 : 1,
+            }]}
+          >
+            <Text style={[s.primaryBtnText, { fontSize: fontSizes.base }]}>{isSaving ? 'Saving...' : 'Save to Stash'}</Text>
+          </AnimatedPressable>
+
+          <AnimatedPressable scaleDown={0.95} onPress={resetForm}
+            style={[s.secondaryBtn, { backgroundColor: colors.border }]}>
+            <Text style={[s.secondaryBtnText, { color: colors.text, fontSize: fontSizes.base }]}>Clear Form</Text>
+          </AnimatedPressable>
         </View>
-
-        {/* Actions */}
-        <Pressable
-          onPress={save}
-          disabled={isSaving}
-          style={[s.primaryBtn, {
-            backgroundColor: isSaving ? colors.textMuted : colors.accent,
-            opacity: isSaving ? 0.7 : 1,
-          }]}
-        >
-          <Text style={s.primaryBtnText}>{isSaving ? 'Saving...' : 'Save to Stash'}</Text>
-        </Pressable>
-
-        <Pressable onPress={resetForm}
-          style={[s.secondaryBtn, { backgroundColor: colors.border }]}>
-          <Text style={[s.secondaryBtnText, { color: colors.text }]}>Clear Form</Text>
-        </Pressable>
-      </View>
+      </Animated.View>
     </ScrollView>
   );
 }
@@ -244,22 +265,19 @@ const s = StyleSheet.create({
     marginBottom: 12,
   },
   cardTitle: {
-    fontSize: 18,
     fontWeight: '700',
     marginBottom: 2,
   },
   subtitle: {
-    fontSize: 14,
     marginBottom: 16,
   },
   field: { marginBottom: 14 },
-  label: { fontSize: 12, fontWeight: '600', marginBottom: 4 },
+  label: { fontWeight: '600', marginBottom: 4 },
   input: {
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 15,
   },
   inputMultiline: {
     minHeight: 80,
@@ -271,7 +289,7 @@ const s = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 20,
   },
-  chipText: { fontSize: 12, fontWeight: '600' },
+  chipText: { fontWeight: '600' },
   row: { flexDirection: 'row', alignItems: 'center' },
   smallBtn: {
     paddingHorizontal: 14,
@@ -279,7 +297,7 @@ const s = StyleSheet.create({
     borderRadius: 10,
     marginLeft: 8,
   },
-  smallBtnText: { fontSize: 13, fontWeight: '600' },
+  smallBtnText: { fontWeight: '600' },
   primaryBtn: {
     paddingVertical: 14,
     borderRadius: 12,
@@ -288,7 +306,6 @@ const s = StyleSheet.create({
   },
   primaryBtnText: {
     color: '#fff',
-    fontSize: 16,
     fontWeight: '700',
   },
   secondaryBtn: {
@@ -298,7 +315,6 @@ const s = StyleSheet.create({
     marginTop: 10,
   },
   secondaryBtnText: {
-    fontSize: 15,
     fontWeight: '600',
   },
 });

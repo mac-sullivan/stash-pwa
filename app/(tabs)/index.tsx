@@ -1,22 +1,55 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, Pressable, ScrollView, TextInput, Image,
-  StyleSheet, Alert, ActivityIndicator,
+  StyleSheet, Alert, ActivityIndicator, Animated, LayoutAnimation,
+  Platform, UIManager,
 } from 'react-native';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from 'expo-router';
 import { useTheme } from '@/lib/theme';
+import { useAuth } from '@/lib/auth';
 import { parseCardImage, parseQrText } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 import { PRESET_CATEGORIES } from '@/lib/constants';
 import type { ParsedCard } from '@/lib/types';
+import AnimatedPressable from '@/components/AnimatedPressable';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 type ScanMode = 'card' | 'qr';
 
+function FadeInView({ children, visible }: { children: React.ReactNode; visible: boolean }) {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(16)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: 0, duration: 350, useNativeDriver: true }),
+      ]).start();
+    } else {
+      fadeAnim.setValue(0);
+      slideAnim.setValue(16);
+    }
+  }, [visible, fadeAnim, slideAnim]);
+
+  if (!visible) return null;
+
+  return (
+    <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+      {children}
+    </Animated.View>
+  );
+}
+
 export default function ScanScreen() {
-  const { colors } = useTheme();
+  const { colors, fontSizes } = useTheme();
+  const { user } = useAuth();
   const [mode, setMode] = useState<ScanMode>('card');
   const [images, setImages] = useState<string[]>([]);
   const [coverIndex, setCoverIndex] = useState(0);
@@ -65,6 +98,7 @@ export default function ScanScreen() {
   };
 
   const switchMode = (newMode: ScanMode) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     resetAll();
     setMode(newMode);
   };
@@ -86,6 +120,17 @@ export default function ScanScreen() {
   // --- Card mode ---
 
   const pickImage = async (useCamera: boolean, addOnly = false) => {
+    if (useCamera) {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Camera Permission Required',
+          'Please enable camera access in your device settings to scan business cards.',
+        );
+        return;
+      }
+    }
+
     const options: ImagePicker.ImagePickerOptions = {
       mediaTypes: ['images'],
       quality: 0.8,
@@ -168,6 +213,7 @@ export default function ScanScreen() {
       const { error } = await supabase
         .from('stash')
         .insert([{
+          user_id: user!.id,
           name: parsedData.name || null,
           company: parsedData.company || null,
           phone: parsedData.phone || null,
@@ -209,11 +255,12 @@ export default function ScanScreen() {
 
     return (
       <View style={s.section}>
-        <Text style={[s.label, { color: colors.textMuted }]}>Categories</Text>
+        <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.xs }]}>Categories</Text>
         <View style={s.chipRow}>
           {PRESET_CATEGORIES.map(cat => (
-            <Pressable
+            <AnimatedPressable
               key={cat}
+              scaleDown={0.92}
               onPress={() => toggleCategory(cat)}
               style={[s.chip, {
                 backgroundColor: selectedCategories.includes(cat) ? colors.accent : colors.border,
@@ -221,21 +268,23 @@ export default function ScanScreen() {
             >
               <Text style={[s.chipText, {
                 color: selectedCategories.includes(cat) ? '#fff' : colors.textMuted,
+                fontSize: fontSizes.xs,
               }]}>{cat}</Text>
-            </Pressable>
+            </AnimatedPressable>
           ))}
         </View>
         {allCustom.length > 0 && (
           <View style={[s.chipRow, { marginTop: 6 }]}>
             {allCustom.map(cat => (
-              <Pressable key={cat} onPress={() => toggleCategory(cat)}
+              <AnimatedPressable key={cat} scaleDown={0.92} onPress={() => toggleCategory(cat)}
                 style={[s.chip, {
                   backgroundColor: selectedCategories.includes(cat) ? colors.accent : colors.border,
                 }]}>
                 <Text style={[s.chipText, {
                   color: selectedCategories.includes(cat) ? '#fff' : colors.textMuted,
+                  fontSize: fontSizes.xs,
                 }]}>{cat}</Text>
-              </Pressable>
+              </AnimatedPressable>
             ))}
           </View>
         )}
@@ -251,15 +300,20 @@ export default function ScanScreen() {
               backgroundColor: colors.inputBg,
               borderColor: colors.inputBorder,
               color: colors.text,
+              fontSize: fontSizes.sm,
             }]}
           />
-          <Pressable onPress={addCustomCategory}
+          <AnimatedPressable onPress={addCustomCategory} scaleDown={0.92}
             style={[s.smallBtn, { backgroundColor: colors.border }]}>
-            <Text style={[s.smallBtnText, { color: colors.text }]}>Add</Text>
-          </Pressable>
+            <Text style={[s.smallBtnText, { color: colors.text, fontSize: fontSizes.xs }]}>Add</Text>
+          </AnimatedPressable>
         </View>
       </View>
     );
+  };
+
+  const updateParsedField = (key: string, value: string) => {
+    setParsedData(prev => prev ? { ...prev, [key]: value } : prev);
   };
 
   const renderParsedData = () => {
@@ -274,26 +328,41 @@ export default function ScanScreen() {
       { key: 'website', label: 'Website' },
       { key: 'additionalWebsite', label: 'Additional Website' },
       { key: 'address', label: 'Address' },
+      { key: 'notes', label: 'Notes' },
     ];
 
     return (
       <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-        <Text style={[s.cardTitle, { color: colors.text }]}>Extracted Information</Text>
+        <Text style={[s.cardTitle, { color: colors.text, fontSize: fontSizes.lg }]}>Extracted Information</Text>
+        <Text style={[s.editHint, { color: colors.textMuted, fontSize: fontSizes.xs }]}>Tap any field to edit before saving</Text>
 
         {fields.map(({ key, label }) => {
           const value = parsedData[key];
-          if (!value || typeof value === 'object') return null;
+          if (typeof value === 'object') return null;
           return (
             <View key={key} style={s.field}>
-              <Text style={[s.label, { color: colors.textMuted }]}>{label}</Text>
-              <Text style={[s.value, { color: colors.text }]}>{value}</Text>
+              <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.xs }]}>{label}</Text>
+              <TextInput
+                value={value || ''}
+                onChangeText={text => updateParsedField(key, text)}
+                placeholder={label}
+                placeholderTextColor={colors.textMuted}
+                multiline={key === 'address' || key === 'notes'}
+                style={[s.input, {
+                  backgroundColor: colors.inputBg,
+                  borderColor: (value || '').trim() ? colors.accent + '55' : colors.inputBorder,
+                  color: colors.text,
+                  fontSize: fontSizes.base,
+                }, (key === 'address' || key === 'notes') && s.inputMultiline]}
+              />
             </View>
           );
         })}
 
         {renderCategoryPicker()}
 
-        <Pressable
+        <AnimatedPressable
+          scaleDown={0.95}
           onPress={saveToStash}
           disabled={isSaving}
           style={[s.primaryBtn, {
@@ -301,8 +370,8 @@ export default function ScanScreen() {
             opacity: isSaving ? 0.7 : 1,
           }]}
         >
-          <Text style={s.primaryBtnText}>{isSaving ? 'Saving...' : 'Save to Stash'}</Text>
-        </Pressable>
+          <Text style={[s.primaryBtnText, { fontSize: fontSizes.base }]}>{isSaving ? 'Saving...' : 'Save to Stash'}</Text>
+        </AnimatedPressable>
       </View>
     );
   };
@@ -311,22 +380,24 @@ export default function ScanScreen() {
     <ScrollView style={[s.container, { backgroundColor: colors.bg }]} contentContainerStyle={s.content}>
       {/* Mode Toggle */}
       <View style={[s.modeToggle, { borderColor: colors.border }]}>
-        <Pressable
+        <AnimatedPressable
+          scaleDown={0.95}
           onPress={() => switchMode('card')}
           style={[s.modeBtn, { backgroundColor: mode === 'card' ? colors.accent : colors.bgCard }]}
         >
-          <Text style={[s.modeBtnText, { color: mode === 'card' ? '#fff' : colors.textMuted }]}>
-            📸 Scan Card
+          <Text style={[s.modeBtnText, { color: mode === 'card' ? '#fff' : colors.textMuted, fontSize: fontSizes.sm }]}>
+            Scan Card
           </Text>
-        </Pressable>
-        <Pressable
+        </AnimatedPressable>
+        <AnimatedPressable
+          scaleDown={0.95}
           onPress={() => switchMode('qr')}
           style={[s.modeBtn, { backgroundColor: mode === 'qr' ? colors.accent : colors.bgCard }]}
         >
-          <Text style={[s.modeBtnText, { color: mode === 'qr' ? '#fff' : colors.textMuted }]}>
+          <Text style={[s.modeBtnText, { color: mode === 'qr' ? '#fff' : colors.textMuted, fontSize: fontSizes.sm }]}>
             QR Code
           </Text>
-        </Pressable>
+        </AnimatedPressable>
       </View>
 
       {/* Card Mode */}
@@ -344,7 +415,7 @@ export default function ScanScreen() {
                     }]} resizeMode="cover" />
                     {idx === coverIndex && (
                       <View style={[s.coverBadge, { backgroundColor: colors.accent }]}>
-                        <Text style={s.coverBadgeText}>★</Text>
+                        <Text style={s.coverBadgeText}>&#9733;</Text>
                       </View>
                     )}
                   </Pressable>
@@ -361,26 +432,27 @@ export default function ScanScreen() {
                 </Pressable>
               </ScrollView>
               <View style={[s.row, { marginTop: 12, gap: 12 }]}>
-                <Pressable onPress={resetAll} style={[s.secondaryBtn, { flex: 1, backgroundColor: colors.border }]}>
-                  <Text style={[s.secondaryBtnText, { color: colors.text }]}>Start Over</Text>
-                </Pressable>
+                <AnimatedPressable scaleDown={0.95} onPress={resetAll}
+                  style={[s.secondaryBtn, { flex: 1, backgroundColor: colors.border }]}>
+                  <Text style={[s.secondaryBtnText, { color: colors.text, fontSize: fontSizes.base }]}>Start Over</Text>
+                </AnimatedPressable>
               </View>
             </>
           ) : (
             <View style={s.uploadArea}>
               <Text style={s.uploadIcon}>📸</Text>
-              <Text style={[s.uploadTitle, { color: colors.text }]}>Scan Business Card</Text>
-              <Text style={[s.uploadSub, { color: colors.textMuted }]}>Take a photo or choose from gallery</Text>
+              <Text style={[s.uploadTitle, { color: colors.text, fontSize: fontSizes.lg }]}>Scan Business Card</Text>
+              <Text style={[s.uploadSub, { color: colors.textMuted, fontSize: fontSizes.sm }]}>Take a photo or choose from gallery</Text>
               <View style={[s.row, { marginTop: 16 }]}>
-                <Pressable onPress={() => pickImage(true)}
+                <AnimatedPressable scaleDown={0.95} onPress={() => pickImage(true)}
                   style={[s.primaryBtn, { flex: 1, marginTop: 0, backgroundColor: colors.accent }]}>
-                  <Text style={s.primaryBtnText}>Camera</Text>
-                </Pressable>
+                  <Text style={[s.primaryBtnText, { fontSize: fontSizes.base }]}>Camera</Text>
+                </AnimatedPressable>
                 <View style={{ width: 12 }} />
-                <Pressable onPress={() => pickImage(false)}
+                <AnimatedPressable scaleDown={0.95} onPress={() => pickImage(false)}
                   style={[s.secondaryBtn, { flex: 1, backgroundColor: colors.border }]}>
-                  <Text style={[s.secondaryBtnText, { color: colors.text }]}>Gallery</Text>
-                </Pressable>
+                  <Text style={[s.secondaryBtnText, { color: colors.text, fontSize: fontSizes.base }]}>Gallery</Text>
+                </AnimatedPressable>
               </View>
             </View>
           )}
@@ -397,26 +469,26 @@ export default function ScanScreen() {
                 barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
                 onBarcodeScanned={handleBarcodeScan}
               />
-              <Pressable onPress={() => setCameraActive(false)}
+              <AnimatedPressable scaleDown={0.95} onPress={() => setCameraActive(false)}
                 style={[s.secondaryBtn, { backgroundColor: colors.border, margin: 12 }]}>
-                <Text style={[s.secondaryBtnText, { color: colors.text }]}>Stop Camera</Text>
-              </Pressable>
+                <Text style={[s.secondaryBtnText, { color: colors.text, fontSize: fontSizes.base }]}>Stop Camera</Text>
+              </AnimatedPressable>
             </>
           ) : (
             <View style={s.uploadArea}>
               <Text style={s.uploadIcon}>📱</Text>
-              <Text style={[s.uploadTitle, { color: colors.text }]}>Scan QR Code</Text>
-              <Text style={[s.uploadSub, { color: colors.textMuted }]}>Point camera at a QR code</Text>
+              <Text style={[s.uploadTitle, { color: colors.text, fontSize: fontSizes.lg }]}>Scan QR Code</Text>
+              <Text style={[s.uploadSub, { color: colors.textMuted, fontSize: fontSizes.sm }]}>Point camera at a QR code</Text>
               <View style={[s.row, { marginTop: 16 }]}>
-                <Pressable onPress={startQrCamera}
+                <AnimatedPressable scaleDown={0.95} onPress={startQrCamera}
                   style={[s.primaryBtn, { flex: 1, marginTop: 0, backgroundColor: colors.accent }]}>
-                  <Text style={s.primaryBtnText}>Open Camera</Text>
-                </Pressable>
+                  <Text style={[s.primaryBtnText, { fontSize: fontSizes.base }]}>Open Camera</Text>
+                </AnimatedPressable>
                 <View style={{ width: 12 }} />
-                <Pressable onPress={() => pickImage(false)}
+                <AnimatedPressable scaleDown={0.95} onPress={() => pickImage(false)}
                   style={[s.secondaryBtn, { flex: 1, backgroundColor: colors.border }]}>
-                  <Text style={[s.secondaryBtnText, { color: colors.text }]}>Upload</Text>
-                </Pressable>
+                  <Text style={[s.secondaryBtnText, { color: colors.text, fontSize: fontSizes.base }]}>Upload</Text>
+                </AnimatedPressable>
               </View>
             </View>
           )}
@@ -427,23 +499,21 @@ export default function ScanScreen() {
       {isProcessing && (
         <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border, alignItems: 'center', padding: 40 }]}>
           <ActivityIndicator size="large" color={colors.accent} />
-          <Text style={[s.uploadTitle, { color: colors.text, marginTop: 16 }]}>
+          <Text style={[s.uploadTitle, { color: colors.text, marginTop: 16, fontSize: fontSizes.lg }]}>
             {mode === 'card' ? 'Analyzing card...' : 'Processing QR data...'}
           </Text>
-          <Text style={[s.uploadSub, { color: colors.textMuted }]}>Extracting contact information</Text>
+          <Text style={[s.uploadSub, { color: colors.textMuted, fontSize: fontSizes.sm }]}>Extracting contact information</Text>
         </View>
       )}
 
       {/* Results */}
-      {parsedData && (
-        <>
-          {renderParsedData()}
-          <Pressable onPress={resetAll}
-            style={[s.secondaryBtn, { backgroundColor: colors.border, marginTop: 8 }]}>
-            <Text style={[s.secondaryBtnText, { color: colors.text }]}>Scan Another</Text>
-          </Pressable>
-        </>
-      )}
+      <FadeInView visible={!!parsedData}>
+        {renderParsedData()}
+        <AnimatedPressable scaleDown={0.95} onPress={resetAll}
+          style={[s.secondaryBtn, { backgroundColor: colors.border, marginTop: 8 }]}>
+          <Text style={[s.secondaryBtnText, { color: colors.text, fontSize: fontSizes.base }]}>Scan Another</Text>
+        </AnimatedPressable>
+      </FadeInView>
     </ScrollView>
   );
 }
@@ -464,7 +534,6 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   modeBtnText: {
-    fontSize: 14,
     fontWeight: '600',
   },
   card: {
@@ -474,8 +543,10 @@ const s = StyleSheet.create({
     marginBottom: 12,
   },
   cardTitle: {
-    fontSize: 18,
     fontWeight: '700',
+    marginBottom: 4,
+  },
+  editHint: {
     marginBottom: 16,
   },
   uploadArea: {
@@ -483,8 +554,8 @@ const s = StyleSheet.create({
     paddingVertical: 24,
   },
   uploadIcon: { fontSize: 48, marginBottom: 12 },
-  uploadTitle: { fontSize: 18, fontWeight: '600', marginBottom: 4 },
-  uploadSub: { fontSize: 14, marginBottom: 8 },
+  uploadTitle: { fontWeight: '600', marginBottom: 4 },
+  uploadSub: { marginBottom: 8 },
   previewImage: {
     width: '100%',
     height: 220,
@@ -535,22 +606,25 @@ const s = StyleSheet.create({
   },
   section: { marginTop: 16 },
   field: { marginBottom: 12 },
-  label: { fontSize: 12, fontWeight: '600', marginBottom: 2 },
-  value: { fontSize: 15 },
+  label: { fontWeight: '600', marginBottom: 2 },
+  value: {},
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 },
   chip: {
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 20,
   },
-  chipText: { fontSize: 12, fontWeight: '600' },
+  chipText: { fontWeight: '600' },
   row: { flexDirection: 'row', alignItems: 'center' },
   input: {
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    fontSize: 14,
+  },
+  inputMultiline: {
+    minHeight: 60,
+    textAlignVertical: 'top',
   },
   smallBtn: {
     paddingHorizontal: 14,
@@ -558,7 +632,7 @@ const s = StyleSheet.create({
     borderRadius: 10,
     marginLeft: 8,
   },
-  smallBtnText: { fontSize: 13, fontWeight: '600' },
+  smallBtnText: { fontWeight: '600' },
   primaryBtn: {
     paddingVertical: 12,
     borderRadius: 12,
@@ -567,7 +641,6 @@ const s = StyleSheet.create({
   },
   primaryBtnText: {
     color: '#fff',
-    fontSize: 15,
     fontWeight: '600',
   },
   secondaryBtn: {
@@ -576,7 +649,6 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   secondaryBtnText: {
-    fontSize: 15,
     fontWeight: '600',
   },
 });

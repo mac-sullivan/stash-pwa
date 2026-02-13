@@ -1,15 +1,11 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { View, Text, Pressable, Modal, StyleSheet } from 'react-native';
+import { View, Text, Pressable, Modal, StyleSheet, Alert } from 'react-native';
 import { useState } from 'react';
 import { useTheme } from '@/lib/theme';
-import { type ThemeName } from '@/lib/constants';
-
-const THEME_OPTIONS: { name: ThemeName; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { name: 'light', label: 'Light', icon: 'sunny-outline' },
-  { name: 'dark', label: 'Dark', icon: 'moon-outline' },
-  { name: 'bold', label: 'Bold', icon: 'flash-outline' },
-];
+import { useAuth } from '@/lib/auth';
+import { type ThemeName, type FontSizeName } from '@/lib/constants';
+import AnimatedPressable from '@/components/AnimatedPressable';
 
 const THEME_ICONS: Record<ThemeName, keyof typeof Ionicons.glyphMap> = {
   light: 'sunny-outline',
@@ -17,53 +13,126 @@ const THEME_ICONS: Record<ThemeName, keyof typeof Ionicons.glyphMap> = {
   bold: 'flash-outline',
 };
 
+const FONT_SIZE_OPTIONS: { name: FontSizeName; label: string }[] = [
+  { name: 'small', label: 'Small' },
+  { name: 'medium', label: 'Medium' },
+  { name: 'large', label: 'Large' },
+];
+
+const THEME_ORDER: ThemeName[] = ['light', 'dark', 'bold'];
+
 function ThemeToggle() {
   const { theme, setTheme, colors } = useTheme();
+  const cycleTheme = () => {
+    const idx = THEME_ORDER.indexOf(theme);
+    setTheme(THEME_ORDER[(idx + 1) % THEME_ORDER.length]);
+  };
+  return (
+    <Pressable onPress={cycleTheme} style={styles.iconBtnRight}>
+      <Ionicons name={THEME_ICONS[theme]} size={22} color={colors.headerText} />
+    </Pressable>
+  );
+}
+
+function SettingsButton() {
+  const { colors, fontSize, setFontSize, fontSizes } = useTheme();
+  const { user, signOut } = useAuth();
   const [visible, setVisible] = useState(false);
+
+  const handleSignOut = () => {
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: async () => {
+          setVisible(false);
+          await signOut();
+        },
+      },
+    ]);
+  };
 
   return (
     <>
-      <Pressable onPress={() => setVisible(true)} style={styles.iconBtn}>
-        <Ionicons name={THEME_ICONS[theme]} size={22} color={colors.headerText} />
+      <Pressable onPress={() => setVisible(true)} style={styles.iconBtnLeft}>
+        <Ionicons name="settings-outline" size={22} color={colors.headerText} />
       </Pressable>
 
       <Modal
         visible={visible}
         transparent
-        animationType="fade"
+        animationType="slide"
         onRequestClose={() => setVisible(false)}
       >
         <Pressable style={styles.backdrop} onPress={() => setVisible(false)}>
-          <View style={[styles.popup, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-            <Text style={[styles.popupTitle, { color: colors.text }]}>Theme</Text>
-            {THEME_OPTIONS.map(opt => (
-              <Pressable
-                key={opt.name}
-                onPress={() => { setTheme(opt.name); setVisible(false); }}
-                style={[styles.optionRow, {
-                  backgroundColor: theme === opt.name ? colors.accent + '18' : 'transparent',
-                  borderColor: theme === opt.name ? colors.accent : 'transparent',
-                }]}
-              >
-                <Ionicons
-                  name={opt.icon}
-                  size={20}
-                  color={theme === opt.name ? colors.accent : colors.textMuted}
-                />
-                <Text style={[styles.optionText, {
-                  color: theme === opt.name ? colors.accent : colors.text,
-                }]}>
-                  {opt.label}
-                </Text>
-                {theme === opt.name && (
-                  <Ionicons name="checkmark" size={18} color={colors.accent} style={{ marginLeft: 'auto' }} />
-                )}
-              </Pressable>
-            ))}
+          <View
+            style={[styles.sheet, { backgroundColor: colors.bgCard }]}
+            onStartShouldSetResponder={() => true}
+          >
+            <View style={[styles.handle, { backgroundColor: colors.border }]} />
+
+            <Text style={[styles.sheetTitle, { color: colors.text, fontSize: fontSizes.xl }]}>Settings</Text>
+
+            {/* Account section */}
+            <Text style={[styles.sectionLabel, { color: colors.textMuted, fontSize: fontSizes.sm }]}>Account</Text>
+            <Text style={[styles.emailText, { color: colors.text, fontSize: fontSizes.sm }]}>
+              {user?.email ?? 'Not signed in'}
+            </Text>
+
+            {/* Font Size section */}
+            <Text style={[styles.sectionLabel, { color: colors.textMuted, fontSize: fontSizes.sm, marginTop: 20 }]}>Font Size</Text>
+            <View style={styles.fontSizeRow}>
+              {FONT_SIZE_OPTIONS.map(opt => (
+                <AnimatedPressable
+                  key={opt.name}
+                  scaleDown={0.9}
+                  onPress={() => setFontSize(opt.name)}
+                  style={[styles.fontSizeBtn, {
+                    backgroundColor: fontSize === opt.name ? colors.accent : 'transparent',
+                    borderColor: fontSize === opt.name ? colors.accent : colors.border,
+                  }]}
+                >
+                  <Text style={[styles.fontSizeBtnText, {
+                    color: fontSize === opt.name ? '#fff' : colors.text,
+                    fontSize: fontSizes.sm,
+                  }]}>
+                    {opt.label}
+                  </Text>
+                </AnimatedPressable>
+              ))}
+            </View>
+
+            {/* Sign Out */}
+            <AnimatedPressable
+              scaleDown={0.95}
+              onPress={handleSignOut}
+              style={[styles.signOutBtn, { borderColor: colors.border }]}
+            >
+              <Ionicons name="log-out-outline" size={18} color="#ef4444" style={{ marginRight: 6 }} />
+              <Text style={styles.signOutText}>Sign Out</Text>
+            </AnimatedPressable>
+
+            <AnimatedPressable
+              scaleDown={0.95}
+              onPress={() => setVisible(false)}
+              style={[styles.doneBtn, { backgroundColor: colors.accent }]}
+            >
+              <Text style={[styles.doneBtnText, { fontSize: fontSizes.base }]}>Done</Text>
+            </AnimatedPressable>
           </View>
         </Pressable>
       </Modal>
     </>
+  );
+}
+
+function HeaderTitle() {
+  const { colors } = useTheme();
+  return (
+    <Text style={[styles.headerTitle, { color: colors.headerText }]}>
+      Stash
+    </Text>
   );
 }
 
@@ -75,13 +144,14 @@ export default function TabLayout() {
       screenOptions={{
         headerStyle: { backgroundColor: colors.headerBg },
         headerTintColor: colors.headerText,
-        headerTitleStyle: { fontWeight: '700' },
+        headerTitle: () => <HeaderTitle />,
         tabBarStyle: {
           backgroundColor: colors.bgCard,
           borderTopColor: colors.border,
         },
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textMuted,
+        headerLeft: () => <SettingsButton />,
         headerRight: () => <ThemeToggle />,
       }}
     >
@@ -117,47 +187,91 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  iconBtn: {
+  headerTitle: {
+    fontFamily: 'PlayfairDisplay-Bold',
+    fontSize: 22,
+    letterSpacing: 0.5,
+  },
+  iconBtnLeft: {
+    marginLeft: 16,
+    padding: 4,
+  },
+  iconBtnRight: {
     marginRight: 16,
     padding: 4,
   },
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-end',
-    paddingTop: 100,
-    paddingRight: 16,
+    justifyContent: 'flex-end',
   },
-  popup: {
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 12,
-    width: 180,
+  sheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingBottom: 40,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.2,
     shadowRadius: 12,
     elevation: 8,
   },
-  popupTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    marginBottom: 8,
-    paddingHorizontal: 8,
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 16,
   },
-  optionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    borderWidth: 1,
+  sheetTitle: {
+    fontWeight: '700',
+    marginBottom: 20,
+  },
+  sectionLabel: {
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 10,
+  },
+  emailText: {
     marginBottom: 4,
+  },
+  fontSizeRow: {
+    flexDirection: 'row',
     gap: 10,
   },
-  optionText: {
-    fontSize: 15,
+  fontSizeBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  fontSizeBtnText: {
     fontWeight: '600',
+  },
+  signOutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 24,
+  },
+  signOutText: {
+    color: '#ef4444',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  doneBtn: {
+    marginTop: 12,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  doneBtnText: {
+    color: '#fff',
+    fontWeight: '700',
   },
 });
