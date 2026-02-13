@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View, Text, Pressable, FlatList, TextInput, Image, ScrollView,
   StyleSheet, Alert, ActivityIndicator, Linking, RefreshControl,
-  Animated, LayoutAnimation, Platform, UIManager,
+  Animated, LayoutAnimation, Platform, UIManager, Share,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -11,8 +11,10 @@ import { useTheme } from '@/lib/theme';
 import { supabase } from '@/lib/supabase';
 import { PRESET_CATEGORIES } from '@/lib/constants';
 import type { StashCard } from '@/lib/types';
+import { formatCardText, formatCategoryCards } from '@/lib/sharing';
 import { useFocusEffect } from 'expo-router';
 import ImageLightbox from '@/components/ImageLightbox';
+import AnimatedPressable from '@/components/AnimatedPressable';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -71,7 +73,7 @@ function ChevronAnimated({ expanded, color }: { expanded: boolean; color: string
 }
 
 export default function CollectionScreen() {
-  const { colors } = useTheme();
+  const { colors, fontSizes } = useTheme();
   const [cards, setCards] = useState<StashCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -182,6 +184,7 @@ export default function CollectionScreen() {
   };
 
   const startEdit = (card: StashCard) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setEditingId(card.id);
     setEditData({
       name: card.name,
@@ -202,6 +205,7 @@ export default function CollectionScreen() {
   };
 
   const cancelEdit = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setEditingId(null);
     setEditData({});
     setEditCategories([]);
@@ -312,9 +316,28 @@ export default function CollectionScreen() {
     Linking.openURL(formatted);
   };
 
+  const shareCard = async (card: StashCard) => {
+    try {
+      await Share.share({ message: formatCardText(card) });
+    } catch (error) {
+      console.log('Share cancelled:', error);
+    }
+  };
+
+  const shareFilteredCards = async () => {
+    try {
+      const label = activeFilters.length === 1
+        ? activeFilters[0]
+        : `${activeFilters.length} Categories`;
+      await Share.share({ message: formatCategoryCards(filteredAndSorted, label) });
+    } catch (error) {
+      console.log('Share cancelled:', error);
+    }
+  };
+
   const renderEditField = (label: string, key: keyof StashCard) => (
     <View style={s.field} key={key}>
-      <Text style={[s.label, { color: colors.textMuted }]}>{label}</Text>
+      <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.sm }]}>{label}</Text>
       <TextInput
         value={(editData[key] as string) || ''}
         onChangeText={text => setEditData(prev => ({ ...prev, [key]: text }))}
@@ -322,6 +345,7 @@ export default function CollectionScreen() {
           backgroundColor: colors.inputBg,
           borderColor: colors.inputBorder,
           color: colors.text,
+          fontSize: fontSizes.base,
         }]}
         placeholderTextColor={colors.textMuted}
       />
@@ -334,7 +358,8 @@ export default function CollectionScreen() {
 
     return (
       <FadeInCard index={index} key={`${card.id}-${animKey}`}>
-        <Pressable
+        <AnimatedPressable
+          scaleDown={0.98}
           onPress={() => {
             if (!isEditing) toggleExpand(card.id);
           }}
@@ -343,11 +368,11 @@ export default function CollectionScreen() {
           {/* Top section: info + image side by side */}
           <View style={s.cardTop}>
             <View style={s.cardInfo}>
-              <Text style={[s.cardName, { color: colors.text }]} numberOfLines={isExpanded ? undefined : 1}>
+              <Text style={[s.cardName, { color: colors.text, fontSize: fontSizes.lg }]} numberOfLines={isExpanded ? undefined : 1}>
                 {card.name || 'Unknown'}
               </Text>
               {card.company && (
-                <Text style={[s.cardCompany, { color: colors.textMuted }]} numberOfLines={1}>
+                <Text style={[s.cardCompany, { color: colors.textMuted, fontSize: fontSizes.base }]} numberOfLines={1}>
                   {card.company}
                 </Text>
               )}
@@ -356,9 +381,10 @@ export default function CollectionScreen() {
               {card.categories && card.categories.length > 0 && !isEditing && (
                 <View style={s.chipRow}>
                   {card.categories.map(cat => (
-                    <View key={cat} style={[s.chip, { backgroundColor: colors.accent + '22' }]}>
-                      <Text style={[s.chipText, { color: colors.accent }]}>{cat}</Text>
-                    </View>
+                    <AnimatedPressable key={cat} scaleDown={0.92}
+                      style={[s.chip, { backgroundColor: colors.accent + '22' }]}>
+                      <Text style={[s.chipText, { color: colors.accent, fontSize: fontSizes.sm }]}>{cat}</Text>
+                    </AnimatedPressable>
                   ))}
                 </View>
               )}
@@ -367,12 +393,12 @@ export default function CollectionScreen() {
               {!isExpanded && !isEditing && (
                 <View style={s.quickInfo}>
                   {card.phone && (
-                    <Text style={[s.quickText, { color: colors.textMuted }]} numberOfLines={1}>
+                    <Text style={[s.quickText, { color: colors.textMuted, fontSize: fontSizes.base }]} numberOfLines={1}>
                       {card.phone}
                     </Text>
                   )}
                   {card.email && (
-                    <Text style={[s.quickText, { color: colors.textMuted }]} numberOfLines={1}>
+                    <Text style={[s.quickText, { color: colors.textMuted, fontSize: fontSizes.base }]} numberOfLines={1}>
                       {card.email}
                     </Text>
                   )}
@@ -400,62 +426,62 @@ export default function CollectionScreen() {
               {card.phone && (
                 <Pressable onPress={() => Linking.openURL(`tel:${card.phone}`)}>
                   <View style={s.field}>
-                    <Text style={[s.label, { color: colors.textMuted }]}>Phone</Text>
-                    <Text style={[s.value, { color: colors.accent }]}>{card.phone}</Text>
+                    <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.sm }]}>Phone</Text>
+                    <Text style={[s.value, { color: colors.accent, fontSize: fontSizes.base }]}>{card.phone}</Text>
                   </View>
                 </Pressable>
               )}
               {card.additional_phone && (
                 <Pressable onPress={() => Linking.openURL(`tel:${card.additional_phone}`)}>
                   <View style={s.field}>
-                    <Text style={[s.label, { color: colors.textMuted }]}>Additional Phone</Text>
-                    <Text style={[s.value, { color: colors.accent }]}>{card.additional_phone}</Text>
+                    <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.sm }]}>Additional Phone</Text>
+                    <Text style={[s.value, { color: colors.accent, fontSize: fontSizes.base }]}>{card.additional_phone}</Text>
                   </View>
                 </Pressable>
               )}
               {card.email && (
                 <Pressable onPress={() => Linking.openURL(`mailto:${card.email}`)}>
                   <View style={s.field}>
-                    <Text style={[s.label, { color: colors.textMuted }]}>Email</Text>
-                    <Text style={[s.value, { color: colors.accent }]}>{card.email}</Text>
+                    <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.sm }]}>Email</Text>
+                    <Text style={[s.value, { color: colors.accent, fontSize: fontSizes.base }]}>{card.email}</Text>
                   </View>
                 </Pressable>
               )}
               {card.website && (
                 <Pressable onPress={() => openLink(card.website!)}>
                   <View style={s.field}>
-                    <Text style={[s.label, { color: colors.textMuted }]}>Website</Text>
-                    <Text style={[s.value, { color: colors.accent }]}>{card.website}</Text>
+                    <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.sm }]}>Website</Text>
+                    <Text style={[s.value, { color: colors.accent, fontSize: fontSizes.base }]}>{card.website}</Text>
                   </View>
                 </Pressable>
               )}
               {card.additional_website && (
                 <Pressable onPress={() => openLink(card.additional_website!)}>
                   <View style={s.field}>
-                    <Text style={[s.label, { color: colors.textMuted }]}>Additional Website</Text>
-                    <Text style={[s.value, { color: colors.accent }]}>{card.additional_website}</Text>
+                    <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.sm }]}>Additional Website</Text>
+                    <Text style={[s.value, { color: colors.accent, fontSize: fontSizes.base }]}>{card.additional_website}</Text>
                   </View>
                 </Pressable>
               )}
               {card.address && (
                 <View style={s.field}>
-                  <Text style={[s.label, { color: colors.textMuted }]}>Address</Text>
-                  <Text style={[s.value, { color: colors.text }]}>{card.address}</Text>
+                  <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.sm }]}>Address</Text>
+                  <Text style={[s.value, { color: colors.text, fontSize: fontSizes.base }]}>{card.address}</Text>
                 </View>
               )}
               {card.notes && (
                 <View style={s.field}>
-                  <Text style={[s.label, { color: colors.textMuted }]}>Notes</Text>
-                  <Text style={[s.value, { color: colors.text }]}>{card.notes}</Text>
+                  <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.sm }]}>Notes</Text>
+                  <Text style={[s.value, { color: colors.text, fontSize: fontSizes.base }]}>{card.notes}</Text>
                 </View>
               )}
               {card.social_media && Object.entries(card.social_media).some(([, v]) => v) && (
                 <View style={s.field}>
-                  <Text style={[s.label, { color: colors.textMuted }]}>Social Media</Text>
+                  <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.sm }]}>Social Media</Text>
                   {Object.entries(card.social_media).map(([platform, url]) =>
                     url ? (
                       <Pressable key={platform} onPress={() => openLink(url)}>
-                        <Text style={[s.socialLink, { color: colors.accent }]}>
+                        <Text style={[s.socialLink, { color: colors.accent, fontSize: fontSizes.base }]}>
                           {platform.charAt(0).toUpperCase() + platform.slice(1)}
                         </Text>
                       </Pressable>
@@ -467,7 +493,7 @@ export default function CollectionScreen() {
               {/* Image gallery thumbnails */}
               {getCardImages(card).length > 1 && (
                 <View style={s.field}>
-                  <Text style={[s.label, { color: colors.textMuted }]}>
+                  <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.sm }]}>
                     Images ({getCardImages(card).length})
                   </Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.galleryRow}>
@@ -483,14 +509,21 @@ export default function CollectionScreen() {
               )}
 
               <View style={[s.actionRow, { borderTopColor: colors.border }]}>
-                <Pressable onPress={() => startEdit(card)}
+                <AnimatedPressable onPress={() => shareCard(card)} scaleDown={0.95}
+                  style={[s.actionBtn, { backgroundColor: colors.border }]}>
+                  <View style={s.actionBtnInner}>
+                    <Ionicons name="share-outline" size={16} color={colors.text} />
+                    <Text style={[s.actionBtnText, { color: colors.text, fontSize: fontSizes.base }]}>Share</Text>
+                  </View>
+                </AnimatedPressable>
+                <AnimatedPressable onPress={() => startEdit(card)} scaleDown={0.95}
                   style={[s.actionBtn, { backgroundColor: colors.accent }]}>
-                  <Text style={s.actionBtnText}>Edit</Text>
-                </Pressable>
-                <Pressable onPress={() => deleteCard(card.id)}
+                  <Text style={[s.actionBtnText, { fontSize: fontSizes.base }]}>Edit</Text>
+                </AnimatedPressable>
+                <AnimatedPressable onPress={() => deleteCard(card.id)} scaleDown={0.95}
                   style={[s.actionBtn, { backgroundColor: '#ef4444' }]}>
-                  <Text style={s.actionBtnText}>Delete</Text>
-                </Pressable>
+                  <Text style={[s.actionBtnText, { fontSize: fontSizes.base }]}>Delete</Text>
+                </AnimatedPressable>
               </View>
             </View>
           )}
@@ -510,7 +543,7 @@ export default function CollectionScreen() {
 
               {/* Image editor */}
               <View style={s.field}>
-                <Text style={[s.label, { color: colors.textMuted }]}>Images</Text>
+                <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.sm }]}>Images</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.galleryRow}>
                   {editImages.map((img, idx) => (
                     <View key={idx} style={s.editThumbWrap}>
@@ -551,21 +584,22 @@ export default function CollectionScreen() {
 
               {/* Category editor */}
               <View style={s.field}>
-                <Text style={[s.label, { color: colors.textMuted }]}>Categories</Text>
+                <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.sm }]}>Categories</Text>
                 <View style={s.chipRow}>
                   {PRESET_CATEGORIES.filter(cat => !removedCategories.includes(cat)).map(cat => {
                     const otherUse = cards.filter(c => c.id !== editingId && c.categories?.includes(cat)).length;
                     const canRemove = otherUse === 0;
                     return (
                       <View key={cat} style={s.row}>
-                        <Pressable onPress={() => toggleEditCategory(cat)}
+                        <AnimatedPressable onPress={() => toggleEditCategory(cat)} scaleDown={0.92}
                           style={[s.chip, {
                             backgroundColor: editCategories.includes(cat) ? colors.accent : colors.border,
                           }]}>
                           <Text style={[s.chipText, {
                             color: editCategories.includes(cat) ? '#fff' : colors.textMuted,
+                            fontSize: fontSizes.sm,
                           }]}>{cat}</Text>
-                        </Pressable>
+                        </AnimatedPressable>
                         {canRemove && (
                           <Pressable onPress={() => removeUnusedCategory(cat)}
                             style={s.chipRemoveInline}>
@@ -592,14 +626,15 @@ export default function CollectionScreen() {
                         const canRemove = otherUse === 0;
                         return (
                           <View key={cat} style={s.row}>
-                            <Pressable onPress={() => toggleEditCategory(cat)}
+                            <AnimatedPressable onPress={() => toggleEditCategory(cat)} scaleDown={0.92}
                               style={[s.chip, {
                                 backgroundColor: editCategories.includes(cat) ? colors.accent : colors.border,
                               }]}>
                               <Text style={[s.chipText, {
                                 color: editCategories.includes(cat) ? '#fff' : colors.textMuted,
+                                fontSize: fontSizes.sm,
                               }]}>{cat}</Text>
-                            </Pressable>
+                            </AnimatedPressable>
                             {canRemove && (
                               <Pressable onPress={() => removeUnusedCategory(cat)}
                                 style={s.chipRemoveInline}>
@@ -624,30 +659,31 @@ export default function CollectionScreen() {
                       backgroundColor: colors.inputBg,
                       borderColor: colors.inputBorder,
                       color: colors.text,
+                      fontSize: fontSizes.base,
                     }]}
                   />
-                  <Pressable onPress={addEditCustomCategory}
+                  <AnimatedPressable onPress={addEditCustomCategory} scaleDown={0.92}
                     style={[s.smallBtn, { backgroundColor: colors.border }]}>
-                    <Text style={[s.smallBtnText, { color: colors.text }]}>Add</Text>
-                  </Pressable>
+                    <Text style={[s.smallBtnText, { color: colors.text, fontSize: fontSizes.sm }]}>Add</Text>
+                  </AnimatedPressable>
                 </View>
               </View>
 
               <View style={[s.actionRow, { borderTopColor: colors.border }]}>
-                <Pressable onPress={() => saveEdit(card.id)}
-                  disabled={savingId === card.id}
+                <AnimatedPressable onPress={() => saveEdit(card.id)}
+                  disabled={savingId === card.id} scaleDown={0.95}
                   style={[s.actionBtn, {
                     backgroundColor: savingId === card.id ? colors.textMuted : colors.accent,
                     flex: 1,
                   }]}>
-                  <Text style={s.actionBtnText}>
+                  <Text style={[s.actionBtnText, { fontSize: fontSizes.base }]}>
                     {savingId === card.id ? 'Saving...' : 'Save'}
                   </Text>
-                </Pressable>
-                <Pressable onPress={cancelEdit}
+                </AnimatedPressable>
+                <AnimatedPressable onPress={cancelEdit} scaleDown={0.95}
                   style={[s.actionBtn, { backgroundColor: colors.border, flex: 1 }]}>
-                  <Text style={[s.actionBtnText, { color: colors.text }]}>Cancel</Text>
-                </Pressable>
+                  <Text style={[s.actionBtnText, { color: colors.text, fontSize: fontSizes.base }]}>Cancel</Text>
+                </AnimatedPressable>
               </View>
             </View>
           )}
@@ -655,13 +691,13 @@ export default function CollectionScreen() {
           {/* View/Hide Details toggle - always at bottom */}
           {!isEditing && (
             <View style={[s.detailsToggle, { borderTopColor: colors.border }]}>
-              <Text style={[s.detailsText, { color: colors.textMuted }]}>
+              <Text style={[s.detailsText, { color: colors.textMuted, fontSize: fontSizes.base }]}>
                 {isExpanded ? 'Hide Details' : 'View Details'}
               </Text>
               <ChevronAnimated expanded={isExpanded} color={colors.textMuted} />
             </View>
           )}
-        </Pressable>
+        </AnimatedPressable>
       </FadeInCard>
     );
   };
@@ -680,16 +716,17 @@ export default function CollectionScreen() {
       <View style={[s.sortBar, { backgroundColor: colors.bgCard, borderBottomColor: colors.border }]}>
         <View style={s.sortBarInner}>
           <Ionicons name="swap-vertical-outline" size={18} color={colors.textMuted} />
-          <Text style={[s.sortLabel, { color: colors.text }]}>Sort</Text>
+          <Text style={[s.sortLabel, { color: colors.text, fontSize: fontSizes.base }]}>Sort</Text>
         </View>
         <View style={s.sortOptions}>
           {([
             { key: 'recent' as const, label: 'Recent' },
-            { key: 'a-z' as const, label: 'A–Z' },
-            { key: 'z-a' as const, label: 'Z–A' },
+            { key: 'a-z' as const, label: 'A\u2013Z' },
+            { key: 'z-a' as const, label: 'Z\u2013A' },
           ]).map(opt => (
-            <Pressable
+            <AnimatedPressable
               key={opt.key}
+              scaleDown={0.92}
               onPress={() => setSortBy(opt.key)}
               style={[s.sortChip, {
                 backgroundColor: sortBy === opt.key ? colors.accent : 'transparent',
@@ -698,8 +735,9 @@ export default function CollectionScreen() {
             >
               <Text style={[s.sortChipText, {
                 color: sortBy === opt.key ? '#fff' : colors.textMuted,
+                fontSize: fontSizes.xs,
               }]}>{opt.label}</Text>
-            </Pressable>
+            </AnimatedPressable>
           ))}
         </View>
       </View>
@@ -716,23 +754,30 @@ export default function CollectionScreen() {
           >
             <View style={s.filterHeaderLeft}>
               <Ionicons name="pricetag-outline" size={18} color={colors.textMuted} />
-              <Text style={[s.filterLabel, { color: colors.text }]}>
+              <Text style={[s.filterLabel, { color: colors.text, fontSize: fontSizes.base }]}>
                 Categories{activeFilters.length > 0 ? ` (${activeFilters.length})` : ''}
               </Text>
+              <ChevronAnimated expanded={filterOpen} color={colors.textMuted} />
             </View>
-            <View style={s.filterHeaderRight}>
-              {activeFilters.length > 0 && (
+            {activeFilters.length > 0 && (
+              <View style={s.filterHeaderRight}>
+                <Pressable
+                  onPress={(e) => { e.stopPropagation(); shareFilteredCards(); }}
+                  style={s.filterShareBtn}
+                  hitSlop={8}
+                >
+                  <Ionicons name="share-outline" size={16} color={colors.accent} />
+                </Pressable>
                 <Pressable
                   onPress={(e) => { e.stopPropagation(); setActiveFilters([]); }}
                   style={s.clearBtn}
                   hitSlop={8}
                 >
                   <Ionicons name="close-circle" size={16} color={colors.textMuted} />
-                  <Text style={[s.clearBtnText, { color: colors.textMuted }]}>Clear</Text>
+                  <Text style={[s.clearBtnText, { color: colors.textMuted, fontSize: fontSizes.sm }]}>Clear</Text>
                 </Pressable>
-              )}
-              <ChevronAnimated expanded={filterOpen} color={colors.textMuted} />
-            </View>
+              </View>
+            )}
           </Pressable>
 
           {filterOpen && (
@@ -746,12 +791,14 @@ export default function CollectionScreen() {
               >
                 <Text style={[s.filterChipText, {
                   color: activeFilters.length === 0 ? '#fff' : colors.text,
+                  fontSize: fontSizes.sm,
                 }]}>All</Text>
                 <View style={[s.filterCount, {
                   backgroundColor: activeFilters.length === 0 ? 'rgba(255,255,255,0.25)' : colors.border,
                 }]}>
                   <Text style={[s.filterCountText, {
                     color: activeFilters.length === 0 ? '#fff' : colors.textMuted,
+                    fontSize: fontSizes.xs,
                   }]}>{cards.length}</Text>
                 </View>
               </Pressable>
@@ -773,12 +820,14 @@ export default function CollectionScreen() {
                   >
                     <Text style={[s.filterChipText, {
                       color: isActive ? '#fff' : colors.text,
+                      fontSize: fontSizes.sm,
                     }]}>{item}</Text>
                     <View style={[s.filterCount, {
                       backgroundColor: isActive ? 'rgba(255,255,255,0.25)' : colors.border,
                     }]}>
                       <Text style={[s.filterCountText, {
                         color: isActive ? '#fff' : colors.textMuted,
+                        fontSize: fontSizes.xs,
                       }]}>{count}</Text>
                     </View>
                   </Pressable>
@@ -801,10 +850,10 @@ export default function CollectionScreen() {
         ListEmptyComponent={
           <View style={s.emptyState}>
             <Text style={[s.emptyIcon]}>📇</Text>
-            <Text style={[s.emptyTitle, { color: colors.text }]}>
+            <Text style={[s.emptyTitle, { color: colors.text, fontSize: fontSizes.xl }]}>
               {activeFilters.length > 0 ? 'No cards match these filters' : 'No cards yet'}
             </Text>
-            <Text style={[s.emptySub, { color: colors.textMuted }]}>
+            <Text style={[s.emptySub, { color: colors.textMuted, fontSize: fontSizes.base }]}>
               {activeFilters.length > 0 ? 'Try different filters' : 'Scan a business card or QR code to get started'}
             </Text>
           </View>
@@ -838,7 +887,6 @@ const s = StyleSheet.create({
     gap: 8,
   },
   sortLabel: {
-    fontSize: 16,
     fontWeight: '700',
   },
   sortOptions: {
@@ -852,7 +900,6 @@ const s = StyleSheet.create({
     borderWidth: 1,
   },
   sortChipText: {
-    fontSize: 13,
     fontWeight: '600',
   },
   filterBar: {
@@ -871,14 +918,16 @@ const s = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  filterLabel: {
+    fontWeight: '700',
+  },
   filterHeaderRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  filterLabel: {
-    fontSize: 16,
-    fontWeight: '700',
+  filterShareBtn: {
+    padding: 4,
   },
   clearBtn: {
     flexDirection: 'row',
@@ -886,7 +935,6 @@ const s = StyleSheet.create({
     gap: 4,
   },
   clearBtnText: {
-    fontSize: 16,
     fontWeight: '600',
   },
   filterChipsContainer: {
@@ -894,17 +942,16 @@ const s = StyleSheet.create({
     flexWrap: 'wrap',
     paddingHorizontal: 16,
     paddingTop: 12,
-    gap: 10,
+    gap: 8,
   },
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: 16,
-    paddingRight: 12,
-    paddingVertical: 10,
-    borderRadius: 22,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
     borderWidth: 1,
-    gap: 8,
+    gap: 6,
   },
   filterChipActive: {
     shadowColor: '#000',
@@ -913,7 +960,7 @@ const s = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  filterChipText: { fontSize: 16, fontWeight: '600' },
+  filterChipText: { fontWeight: '600' },
   filterCount: {
     paddingHorizontal: 7,
     paddingVertical: 2,
@@ -922,7 +969,6 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   filterCountText: {
-    fontSize: 16,
     fontWeight: '700',
   },
   listContent: { padding: 16, paddingBottom: 40 },
@@ -946,21 +992,21 @@ const s = StyleSheet.create({
     borderRadius: 10,
     marginLeft: 12,
   },
-  cardName: { fontSize: 18, fontWeight: '700' },
-  cardCompany: { fontSize: 16, marginTop: 2 },
+  cardName: { fontWeight: '700' },
+  cardCompany: { marginTop: 2 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
   chip: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 16,
   },
-  chipText: { fontSize: 16, fontWeight: '600' },
+  chipText: { fontWeight: '600' },
   chipRemoveInline: {
     marginLeft: 2,
     padding: 2,
   },
   quickInfo: { marginTop: 8 },
-  quickText: { fontSize: 16, marginTop: 2 },
+  quickText: { marginTop: 2 },
   detailsToggle: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -972,7 +1018,6 @@ const s = StyleSheet.create({
     borderTopWidth: 1,
   },
   detailsText: {
-    fontSize: 16,
     fontWeight: '600',
   },
   expandedContent: {
@@ -982,15 +1027,14 @@ const s = StyleSheet.create({
     marginTop: 12,
   },
   field: { marginBottom: 12 },
-  label: { fontSize: 16, fontWeight: '600', marginBottom: 2 },
-  value: { fontSize: 16 },
-  socialLink: { fontSize: 16, marginTop: 4 },
+  label: { fontWeight: '600', marginBottom: 2 },
+  value: {},
+  socialLink: { marginTop: 4 },
   editInput: {
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 16,
   },
   row: { flexDirection: 'row', alignItems: 'center' },
   smallBtn: {
@@ -999,7 +1043,7 @@ const s = StyleSheet.create({
     borderRadius: 10,
     marginLeft: 8,
   },
-  smallBtnText: { fontSize: 16, fontWeight: '600' },
+  smallBtnText: { fontWeight: '600' },
   actionRow: {
     flexDirection: 'row',
     gap: 10,
@@ -1013,7 +1057,8 @@ const s = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
   },
-  actionBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  actionBtnText: { color: '#fff', fontWeight: '600' },
+  actionBtnInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   galleryRow: {
     marginTop: 8,
   },
@@ -1051,6 +1096,6 @@ const s = StyleSheet.create({
   },
   emptyState: { alignItems: 'center', paddingTop: 60 },
   emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyTitle: { fontSize: 20, fontWeight: '600', marginBottom: 4 },
-  emptySub: { fontSize: 16, textAlign: 'center' },
+  emptyTitle: { fontWeight: '600', marginBottom: 4 },
+  emptySub: { textAlign: 'center' },
 });

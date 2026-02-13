@@ -3,6 +3,7 @@ import {
   View, Image, Pressable, Modal, StyleSheet, Dimensions, Text,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AnimatedPressable from './AnimatedPressable';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -37,19 +38,19 @@ export default function ImageLightbox({ images, initialIndex = 0, visible, onClo
         </Pressable>
 
         {/* Close button */}
-        <Pressable style={s.closeBtn} onPress={onClose} hitSlop={12}>
+        <AnimatedPressable style={s.closeBtn} onPress={onClose} scaleDown={0.85} hitSlop={12}>
           <Ionicons name="close" size={28} color="#fff" />
-        </Pressable>
+        </AnimatedPressable>
 
         {/* Navigation arrows */}
         {hasMultiple && (
           <>
-            <Pressable style={[s.arrowBtn, s.arrowLeft]} onPress={goPrev} hitSlop={8}>
+            <AnimatedPressable style={[s.arrowBtn, s.arrowLeft]} onPress={goPrev} scaleDown={0.85} hitSlop={8}>
               <Ionicons name="chevron-back" size={32} color="#fff" />
-            </Pressable>
-            <Pressable style={[s.arrowBtn, s.arrowRight]} onPress={goNext} hitSlop={8}>
+            </AnimatedPressable>
+            <AnimatedPressable style={[s.arrowBtn, s.arrowRight]} onPress={goNext} scaleDown={0.85} hitSlop={8}>
               <Ionicons name="chevron-forward" size={32} color="#fff" />
-            </Pressable>
+            </AnimatedPressable>
           </>
         )}
 

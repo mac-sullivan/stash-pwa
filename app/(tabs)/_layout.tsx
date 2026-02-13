@@ -4,14 +4,8 @@ import { View, Text, Pressable, Modal, StyleSheet, Alert } from 'react-native';
 import { useState } from 'react';
 import { useTheme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
-import { type ThemeName, type FontSizeName } from '@/lib/constants';
+import { type FontSizeName } from '@/lib/constants';
 import AnimatedPressable from '@/components/AnimatedPressable';
-
-const THEME_ICONS: Record<ThemeName, keyof typeof Ionicons.glyphMap> = {
-  light: 'sunny-outline',
-  dark: 'moon-outline',
-  bold: 'flash-outline',
-};
 
 const FONT_SIZE_OPTIONS: { name: FontSizeName; label: string }[] = [
   { name: 'small', label: 'Small' },
@@ -19,17 +13,13 @@ const FONT_SIZE_OPTIONS: { name: FontSizeName; label: string }[] = [
   { name: 'large', label: 'Large' },
 ];
 
-const THEME_ORDER: ThemeName[] = ['light', 'dark', 'bold'];
-
 function ThemeToggle() {
   const { theme, setTheme, colors } = useTheme();
-  const cycleTheme = () => {
-    const idx = THEME_ORDER.indexOf(theme);
-    setTheme(THEME_ORDER[(idx + 1) % THEME_ORDER.length]);
-  };
+  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
+  const icon = theme === 'dark' ? 'moon-outline' : 'sunny-outline';
   return (
-    <Pressable onPress={cycleTheme} style={styles.iconBtnRight}>
-      <Ionicons name={THEME_ICONS[theme]} size={22} color={colors.headerText} />
+    <Pressable onPress={toggleTheme} style={styles.iconBtnRight}>
+      <Ionicons name={icon} size={22} color={colors.headerText} />
     </Pressable>
   );
 }
@@ -109,8 +99,10 @@ function SettingsButton() {
               onPress={handleSignOut}
               style={[styles.signOutBtn, { borderColor: colors.border }]}
             >
-              <Ionicons name="log-out-outline" size={18} color="#ef4444" style={{ marginRight: 6 }} />
-              <Text style={styles.signOutText}>Sign Out</Text>
+              <View style={styles.signOutRow}>
+                <Ionicons name="log-out-outline" size={18} color="#ef4444" style={{ marginRight: 6 }} />
+                <Text style={styles.signOutText}>Sign Out</Text>
+              </View>
             </AnimatedPressable>
 
             <AnimatedPressable
@@ -251,13 +243,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   signOutBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1,
     marginTop: 24,
+  },
+  signOutRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   signOutText: {
     color: '#ef4444',

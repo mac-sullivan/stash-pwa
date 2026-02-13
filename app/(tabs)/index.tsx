@@ -209,27 +209,50 @@ export default function ScanScreen() {
     setIsSaving(true);
 
     try {
-      const coverImage = images[coverIndex] || images[0] || null;
-      const { error } = await supabase
-        .from('stash')
-        .insert([{
-          user_id: user!.id,
-          name: parsedData.name || null,
-          company: parsedData.company || null,
-          phone: parsedData.phone || null,
-          additional_phone: parsedData.additionalPhone || null,
-          email: parsedData.email || null,
-          website: parsedData.website || null,
-          additional_website: parsedData.additionalWebsite || null,
-          address: parsedData.address || null,
-          social_media: parsedData.socialMedia || null,
-          notes: parsedData.notes || null,
-          categories: selectedCategories.length > 0 ? selectedCategories : null,
-          card_image_url: coverImage,
-          card_images: images.length > 0 ? images : null,
-        }]);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        Alert.alert('Session Expired', 'Please sign out and sign back in.');
+        setIsSaving(false);
+        return;
+      }
 
-      if (error) throw error;
+      const coverImage = images[coverIndex] || images[0] || null;
+      const row = {
+        user_id: session.user.id,
+        name: parsedData.name || null,
+        company: parsedData.company || null,
+        phone: parsedData.phone || null,
+        additional_phone: parsedData.additionalPhone || null,
+        email: parsedData.email || null,
+        website: parsedData.website || null,
+        additional_website: parsedData.additionalWebsite || null,
+        address: parsedData.address || null,
+        social_media: parsedData.socialMedia || null,
+        notes: parsedData.notes || null,
+        categories: selectedCategories.length > 0 ? selectedCategories : null,
+        card_image_url: coverImage,
+        card_images: images.length > 0 ? images : null,
+      };
+
+      // Direct REST call bypassing supabase-js client
+      const res = await fetch(
+        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/rest/v1/stash`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!,
+            'Authorization': `Bearer ${session.access_token}`,
+            'Prefer': 'return=minimal',
+          },
+          body: JSON.stringify(row),
+        }
+      );
+
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(body);
+      }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Saved!', 'Card added to your Stash.');

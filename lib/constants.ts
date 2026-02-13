@@ -3,7 +3,7 @@ export const PRESET_CATEGORIES = [
   'Finance', 'Creative', 'Education', 'Real Estate', 'Other',
 ];
 
-export type ThemeName = 'light' | 'dark' | 'bold';
+export type ThemeName = 'light' | 'dark';
 
 export interface ThemeColors {
   bg: string;
@@ -18,6 +18,22 @@ export interface ThemeColors {
   headerBg: string;
   headerText: string;
 }
+
+export type FontSizeName = 'small' | 'medium' | 'large';
+
+export interface FontSizes {
+  xs: number;
+  sm: number;
+  base: number;
+  lg: number;
+  xl: number;
+}
+
+export const FONT_SIZES: Record<FontSizeName, FontSizes> = {
+  small: { xs: 10, sm: 12, base: 13, lg: 15, xl: 16 },
+  medium: { xs: 12, sm: 14, base: 15, lg: 17, xl: 19 },
+  large: { xs: 14, sm: 16, base: 18, lg: 20, xl: 22 },
+};
 
 export const themes: Record<ThemeName, ThemeColors> = {
   light: {
@@ -45,18 +61,5 @@ export const themes: Record<ThemeName, ThemeColors> = {
     inputBorder: '#2a2a3a',
     headerBg: '#1e1e28',
     headerText: '#f1f5f9',
-  },
-  bold: {
-    bg: '#7c3aed',
-    bgCard: '#ffffff',
-    text: '#1e1b4b',
-    textMuted: '#6366f1',
-    border: '#e0d4fc',
-    accent: '#7c3aed',
-    accentHover: '#6d28d9',
-    inputBg: '#ffffff',
-    inputBorder: '#c4b5fd',
-    headerBg: '#6d28d9',
-    headerText: '#ffffff',
   },
 };

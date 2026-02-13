@@ -116,8 +116,19 @@ export default function ManualScreen() {
     if (!validate()) return;
     setIsSaving(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        Alert.alert('Session Expired', 'Please sign out and sign back in.');
+        setIsSaving(false);
+        return;
+      }
+      await supabase.auth.setSession({
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+      });
+
       const { error } = await supabase.from('stash').insert([{
-        user_id: user!.id,
+        user_id: session.user.id,
         name: form.name || null,
         company: form.company || null,
         phone: form.phone || null,
