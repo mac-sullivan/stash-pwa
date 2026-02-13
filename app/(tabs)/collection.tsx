@@ -89,6 +89,8 @@ export default function CollectionScreen() {
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [editImages, setEditImages] = useState<string[]>([]);
   const [editCoverUrl, setEditCoverUrl] = useState<string | null>(null);
+  const [removedCategories, setRemovedCategories] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<'recent' | 'a-z' | 'z-a'>('recent');
 
   const fetchCards = useCallback(async () => {
     try {
@@ -124,9 +126,17 @@ export default function CollectionScreen() {
     setExpandedId(prev => prev === id ? null : id);
   };
 
-  const filteredCards = activeFilters.length > 0
-    ? cards.filter(c => activeFilters.some(f => c.categories?.includes(f)))
-    : cards;
+  const filteredAndSorted = (() => {
+    const filtered = activeFilters.length > 0
+      ? cards.filter(c => activeFilters.some(f => c.categories?.includes(f)))
+      : cards;
+    if (sortBy === 'recent') return filtered;
+    return [...filtered].sort((a, b) => {
+      const nameA = (a.name || '').toLowerCase();
+      const nameB = (b.name || '').toLowerCase();
+      return sortBy === 'a-z' ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
+    });
+  })();
 
   const categoryCounts = cards.reduce<Record<string, number>>((acc, c) => {
     (c.categories || []).forEach(cat => { acc[cat] = (acc[cat] || 0) + 1; });
@@ -187,6 +197,7 @@ export default function CollectionScreen() {
     setEditCategories(card.categories || []);
     setEditImages(getCardImages(card));
     setEditCoverUrl(card.card_image_url);
+    setRemovedCategories([]);
     setCustomCategory('');
   };
 
@@ -196,6 +207,7 @@ export default function CollectionScreen() {
     setEditCategories([]);
     setEditImages([]);
     setEditCoverUrl(null);
+    setRemovedCategories([]);
     setCustomCategory('');
   };
 
@@ -262,6 +274,45 @@ export default function CollectionScreen() {
     setEditCategories(prev =>
       prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
     );
+  };
+
+  const removeUnusedCategory = (cat: string) => {
+    // Count how many OTHER cards (not the one being edited) use this category
+    const otherCards = cards.filter(c => c.id !== editingId && c.categories?.includes(cat));
+    const otherCount = otherCards.length;
+
+    const message = otherCount > 0
+      ? `"${cat}" is also used by ${otherCount} other card${otherCount === 1 ? '' : 's'}. Remove it from all cards?`
+      : `Remove "${cat}"? No other cards are using it.`;
+
+    Alert.alert('Remove Category', message, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            // Remove from all OTHER cards that have this category
+            for (const c of otherCards) {
+              const updated = (c.categories || []).filter(x => x !== cat);
+              await supabase.from('stash').update({
+                categories: updated.length > 0 ? updated : null,
+              }).eq('id', c.id);
+            }
+            // Remove from current card's edit state
+            setEditCategories(prev => prev.filter(c => c !== cat));
+            // Hide from the edit UI immediately
+            setRemovedCategories(prev => [...prev, cat]);
+            // Refresh cards so categoryCounts updates
+            fetchCards();
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          } catch (error) {
+            console.error('Remove category error:', error);
+            Alert.alert('Error', 'Failed to remove category.');
+          }
+        },
+      },
+    ]);
   };
 
   const addEditCustomCategory = () => {
@@ -519,35 +570,59 @@ export default function CollectionScreen() {
                 <Text style={[s.label, { color: colors.textMuted }]}>Categories</Text>
                 <View style={s.chipRow}>
                   {PRESET_CATEGORIES.map(cat => (
-                    <Pressable key={cat} onPress={() => toggleEditCategory(cat)}
-                      style={[s.chip, {
-                        backgroundColor: editCategories.includes(cat) ? colors.accent : colors.border,
-                      }]}>
-                      <Text style={[s.chipText, {
-                        color: editCategories.includes(cat) ? '#fff' : colors.textMuted,
-                      }]}>{cat}</Text>
-                    </Pressable>
+                    <View key={cat} style={s.chipWithRemove}>
+                      <Pressable onPress={() => toggleEditCategory(cat)}
+                        style={[s.chip, {
+                          backgroundColor: editCategories.includes(cat) ? colors.accent : colors.border,
+                        }]}>
+                        <Text style={[s.chipText, {
+                          color: editCategories.includes(cat) ? '#fff' : colors.textMuted,
+                        }]}>{cat}</Text>
+                      </Pressable>
+                      {(() => {
+                        const otherUse = cards.filter(c => c.id !== editingId && c.categories?.includes(cat)).length;
+                        return otherUse === 0;
+                      })() && (
+                        <Pressable onPress={() => removeUnusedCategory(cat)} hitSlop={4}
+                          style={s.chipRemoveBtn}>
+                          <Ionicons name="close-circle" size={16} color="#ef4444" />
+                        </Pressable>
+                      )}
+                    </View>
                   ))}
                 </View>
                 {(() => {
-                  const customFromCards = allCategories.filter(c => !PRESET_CATEGORIES.includes(c));
+                  const customFromCards = allCategories.filter(
+                    c => !PRESET_CATEGORIES.includes(c) && !removedCategories.includes(c)
+                  );
                   const customSelected = editCategories.filter(
-                    c => !PRESET_CATEGORIES.includes(c) && !customFromCards.includes(c)
+                    c => !PRESET_CATEGORIES.includes(c) && !customFromCards.includes(c) && !removedCategories.includes(c)
                   );
                   const allCustom = [...customFromCards, ...customSelected];
                   if (allCustom.length === 0) return null;
                   return (
                     <View style={[s.chipRow, { marginTop: 6 }]}>
-                      {allCustom.map(cat => (
-                        <Pressable key={cat} onPress={() => toggleEditCategory(cat)}
-                          style={[s.chip, {
-                            backgroundColor: editCategories.includes(cat) ? colors.accent : colors.border,
-                          }]}>
-                          <Text style={[s.chipText, {
-                            color: editCategories.includes(cat) ? '#fff' : colors.textMuted,
-                          }]}>{cat}</Text>
-                        </Pressable>
-                      ))}
+                      {allCustom.map(cat => {
+                        const otherUse = cards.filter(c => c.id !== editingId && c.categories?.includes(cat)).length;
+                        return (
+                          <View key={cat} style={s.chipWithRemove}>
+                            <Pressable onPress={() => toggleEditCategory(cat)}
+                              style={[s.chip, {
+                                backgroundColor: editCategories.includes(cat) ? colors.accent : colors.border,
+                              }]}>
+                              <Text style={[s.chipText, {
+                                color: editCategories.includes(cat) ? '#fff' : colors.textMuted,
+                              }]}>{cat}</Text>
+                            </Pressable>
+                            {otherUse === 0 && (
+                              <Pressable onPress={() => removeUnusedCategory(cat)} hitSlop={4}
+                                style={s.chipRemoveBtn}>
+                                <Ionicons name="close-circle" size={16} color="#ef4444" />
+                              </Pressable>
+                            )}
+                          </View>
+                        );
+                      })}
                     </View>
                   );
                 })()}
@@ -615,6 +690,34 @@ export default function CollectionScreen() {
 
   return (
     <View style={[s.container, { backgroundColor: colors.bg }]}>
+      {/* Sort bar */}
+      <View style={[s.sortBar, { backgroundColor: colors.bgCard, borderBottomColor: colors.border }]}>
+        <View style={s.sortBarInner}>
+          <Ionicons name="swap-vertical-outline" size={18} color={colors.textMuted} />
+          <Text style={[s.sortLabel, { color: colors.text }]}>Sort</Text>
+        </View>
+        <View style={s.sortOptions}>
+          {([
+            { key: 'recent' as const, label: 'Recent' },
+            { key: 'a-z' as const, label: 'A–Z' },
+            { key: 'z-a' as const, label: 'Z–A' },
+          ]).map(opt => (
+            <Pressable
+              key={opt.key}
+              onPress={() => setSortBy(opt.key)}
+              style={[s.sortChip, {
+                backgroundColor: sortBy === opt.key ? colors.accent : 'transparent',
+                borderColor: sortBy === opt.key ? colors.accent : colors.border,
+              }]}
+            >
+              <Text style={[s.sortChipText, {
+                color: sortBy === opt.key ? '#fff' : colors.textMuted,
+              }]}>{opt.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
       {/* Categories dropdown */}
       {allCategories.length > 0 && (
         <View style={[s.filterBar, { backgroundColor: colors.bgCard, borderBottomColor: colors.border }]}>
@@ -702,7 +805,7 @@ export default function CollectionScreen() {
 
       {/* Card list */}
       <FlatList
-        data={filteredCards}
+        data={filteredAndSorted}
         keyExtractor={item => `${item.id}-${animKey}`}
         renderItem={renderCard}
         contentContainerStyle={s.listContent}
@@ -735,6 +838,37 @@ export default function CollectionScreen() {
 const s = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  sortBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  sortBarInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sortLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  sortOptions: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  sortChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 18,
+    borderWidth: 1,
+  },
+  sortChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
   filterBar: {
     paddingTop: 14,
     paddingBottom: 12,
@@ -835,6 +969,14 @@ const s = StyleSheet.create({
     borderRadius: 16,
   },
   chipText: { fontSize: 16, fontWeight: '600' },
+  chipWithRemove: {
+    position: 'relative',
+  },
+  chipRemoveBtn: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+  },
   quickInfo: { marginTop: 8 },
   quickText: { fontSize: 16, marginTop: 2 },
   detailsToggle: {
