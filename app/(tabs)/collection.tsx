@@ -569,27 +569,28 @@ export default function CollectionScreen() {
               <View style={s.field}>
                 <Text style={[s.label, { color: colors.textMuted }]}>Categories</Text>
                 <View style={s.chipRow}>
-                  {PRESET_CATEGORIES.map(cat => (
-                    <View key={cat} style={s.chipWithRemove}>
-                      <Pressable onPress={() => toggleEditCategory(cat)}
-                        style={[s.chip, {
-                          backgroundColor: editCategories.includes(cat) ? colors.accent : colors.border,
-                        }]}>
-                        <Text style={[s.chipText, {
-                          color: editCategories.includes(cat) ? '#fff' : colors.textMuted,
-                        }]}>{cat}</Text>
-                      </Pressable>
-                      {(() => {
-                        const otherUse = cards.filter(c => c.id !== editingId && c.categories?.includes(cat)).length;
-                        return otherUse === 0;
-                      })() && (
-                        <Pressable onPress={() => removeUnusedCategory(cat)} hitSlop={4}
-                          style={s.chipRemoveBtn}>
-                          <Ionicons name="close-circle" size={16} color="#ef4444" />
+                  {PRESET_CATEGORIES.filter(cat => !removedCategories.includes(cat)).map(cat => {
+                    const otherUse = cards.filter(c => c.id !== editingId && c.categories?.includes(cat)).length;
+                    const canRemove = otherUse === 0;
+                    return (
+                      <View key={cat} style={s.row}>
+                        <Pressable onPress={() => toggleEditCategory(cat)}
+                          style={[s.chip, {
+                            backgroundColor: editCategories.includes(cat) ? colors.accent : colors.border,
+                          }]}>
+                          <Text style={[s.chipText, {
+                            color: editCategories.includes(cat) ? '#fff' : colors.textMuted,
+                          }]}>{cat}</Text>
                         </Pressable>
-                      )}
-                    </View>
-                  ))}
+                        {canRemove && (
+                          <Pressable onPress={() => removeUnusedCategory(cat)}
+                            style={s.chipRemoveInline}>
+                            <Ionicons name="close-circle" size={18} color="#ef4444" />
+                          </Pressable>
+                        )}
+                      </View>
+                    );
+                  })}
                 </View>
                 {(() => {
                   const customFromCards = allCategories.filter(
@@ -604,8 +605,9 @@ export default function CollectionScreen() {
                     <View style={[s.chipRow, { marginTop: 6 }]}>
                       {allCustom.map(cat => {
                         const otherUse = cards.filter(c => c.id !== editingId && c.categories?.includes(cat)).length;
+                        const canRemove = otherUse === 0;
                         return (
-                          <View key={cat} style={s.chipWithRemove}>
+                          <View key={cat} style={s.row}>
                             <Pressable onPress={() => toggleEditCategory(cat)}
                               style={[s.chip, {
                                 backgroundColor: editCategories.includes(cat) ? colors.accent : colors.border,
@@ -614,10 +616,10 @@ export default function CollectionScreen() {
                                 color: editCategories.includes(cat) ? '#fff' : colors.textMuted,
                               }]}>{cat}</Text>
                             </Pressable>
-                            {otherUse === 0 && (
-                              <Pressable onPress={() => removeUnusedCategory(cat)} hitSlop={4}
-                                style={s.chipRemoveBtn}>
-                                <Ionicons name="close-circle" size={16} color="#ef4444" />
+                            {canRemove && (
+                              <Pressable onPress={() => removeUnusedCategory(cat)}
+                                style={s.chipRemoveInline}>
+                                <Ionicons name="close-circle" size={18} color="#ef4444" />
                               </Pressable>
                             )}
                           </View>
@@ -969,13 +971,9 @@ const s = StyleSheet.create({
     borderRadius: 16,
   },
   chipText: { fontSize: 16, fontWeight: '600' },
-  chipWithRemove: {
-    position: 'relative',
-  },
-  chipRemoveBtn: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
+  chipRemoveInline: {
+    marginLeft: 2,
+    padding: 2,
   },
   quickInfo: { marginTop: 8 },
   quickText: { fontSize: 16, marginTop: 2 },
