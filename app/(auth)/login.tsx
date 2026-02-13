@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, Pressable, StyleSheet,
-  Alert, ActivityIndicator, KeyboardAvoidingView,
+  ActivityIndicator, KeyboardAvoidingView,
   Platform, ScrollView,
 } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/lib/theme';
 import { supabase } from '@/lib/supabase';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const { colors } = useTheme();
@@ -14,6 +19,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   const handleEmailAuth = async () => {
@@ -62,6 +68,47 @@ export default function LoginScreen() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setErrorMsg('');
+    setGoogleLoading(true);
+    try {
+      const redirectUrl = makeRedirectUri();
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl,
+          skipBrowserRedirect: true,
+        },
+      });
+
+      if (error || !data?.url) {
+        throw error || new Error('Failed to start Google sign-in.');
+      }
+
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+
+      if (result.type === 'success') {
+        const url = result.url;
+        // Supabase returns tokens in the URL fragment
+        const fragment = url.split('#')[1];
+        if (fragment) {
+          const params = new URLSearchParams(fragment);
+          const access_token = params.get('access_token');
+          const refresh_token = params.get('refresh_token');
+
+          if (access_token && refresh_token) {
+            await supabase.auth.setSession({ access_token, refresh_token });
+          }
+        }
+      }
+    } catch (error: any) {
+      setErrorMsg(error?.message || 'Google sign-in failed.');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
   const buttonLabel = loading
     ? (isSignUp ? 'Signing Up...' : 'Signing In...')
     : (isSignUp ? 'Sign Up' : 'Sign In');
@@ -93,18 +140,32 @@ export default function LoginScreen() {
               buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
               buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
               cornerRadius={12}
-              style={styles.appleBtn}
+              style={styles.socialBtn}
               onPress={handleAppleSignIn}
             />
           )}
 
-          {Platform.OS === 'ios' && (
-            <View style={styles.dividerRow}>
-              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-              <Text style={[styles.dividerText, { color: colors.textMuted }]}>or</Text>
-              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-            </View>
-          )}
+          {/* Google Sign In */}
+          <Pressable
+            onPress={handleGoogleSignIn}
+            disabled={googleLoading}
+            style={[styles.googleBtn, { borderColor: colors.border }]}
+          >
+            {googleLoading ? (
+              <ActivityIndicator size="small" color={colors.text} />
+            ) : (
+              <>
+                <Ionicons name="logo-google" size={18} color={colors.text} style={{ marginRight: 8 }} />
+                <Text style={[styles.googleBtnText, { color: colors.text }]}>Continue with Google</Text>
+              </>
+            )}
+          </Pressable>
+
+          <View style={styles.dividerRow}>
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+            <Text style={[styles.dividerText, { color: colors.textMuted }]}>or</Text>
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+          </View>
 
           {/* Email/Password */}
           <TextInput
@@ -192,10 +253,23 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 24,
   },
-  appleBtn: {
+  socialBtn: {
     height: 50,
     width: '100%',
+    marginBottom: 10,
+  },
+  googleBtn: {
+    flexDirection: 'row',
+    height: 50,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 4,
+  },
+  googleBtnText: {
+    fontWeight: '600',
+    fontSize: 16,
   },
   dividerRow: {
     flexDirection: 'row',

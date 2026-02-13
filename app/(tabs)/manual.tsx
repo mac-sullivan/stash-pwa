@@ -122,12 +122,8 @@ export default function ManualScreen() {
         setIsSaving(false);
         return;
       }
-      await supabase.auth.setSession({
-        access_token: session.access_token,
-        refresh_token: session.refresh_token,
-      });
 
-      const { error } = await supabase.from('stash').insert([{
+      const row = {
         user_id: session.user.id,
         name: form.name || null,
         company: form.company || null,
@@ -139,8 +135,28 @@ export default function ManualScreen() {
         address: form.address || null,
         notes: form.notes || null,
         categories: selectedCategories.length > 0 ? selectedCategories : null,
-      }]);
-      if (error) throw error;
+      };
+
+      // Direct REST call bypassing supabase-js client
+      const res = await fetch(
+        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/rest/v1/stash`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!,
+            'Authorization': `Bearer ${session.access_token}`,
+            'Prefer': 'return=minimal',
+          },
+          body: JSON.stringify(row),
+        }
+      );
+
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(body);
+      }
+
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Saved!', 'Card added to your Stash.');
       resetForm();
