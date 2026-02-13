@@ -1,9 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import Image from 'next/image';
 import Link from 'next/link';
+
+const PRESET_CATEGORIES = [
+  'Restaurant', 'Retail', 'Service', 'Health', 'Tech',
+  'Finance', 'Creative', 'Education', 'Real Estate', 'Other',
+];
 
 interface StashCard {
   id: number;
@@ -23,6 +28,7 @@ interface StashCard {
   } | null;
   notes: string | null;
   card_image_url: string | null;
+  categories: string[] | null;
 }
 
 interface EditForm {
@@ -35,6 +41,7 @@ interface EditForm {
   additional_website: string;
   address: string;
   notes: string;
+  categories: string[];
 }
 
 function ensureUrl(url: string): string {
@@ -53,6 +60,7 @@ function cardToForm(card: StashCard): EditForm {
     additional_website: card.additional_website || '',
     address: card.address || '',
     notes: card.notes || '',
+    categories: card.categories || [],
   };
 }
 
@@ -62,6 +70,8 @@ export default function CardCollection() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<EditForm | null>(null);
   const [saving, setSaving] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [customCategory, setCustomCategory] = useState('');
 
   useEffect(() => {
     async function fetchCards() {
@@ -80,14 +90,27 @@ export default function CardCollection() {
     fetchCards();
   }, []);
 
+  // All unique categories across cards
+  const allCategories = useMemo(() => {
+    const set = new Set<string>();
+    cards.forEach(c => c.categories?.forEach(cat => set.add(cat)));
+    return Array.from(set).sort();
+  }, [cards]);
+
+  const filteredCards = activeFilter
+    ? cards.filter(c => c.categories?.includes(activeFilter))
+    : cards;
+
   const startEditing = (card: StashCard) => {
     setEditingId(card.id);
     setEditForm(cardToForm(card));
+    setCustomCategory('');
   };
 
   const cancelEditing = () => {
     setEditingId(null);
     setEditForm(null);
+    setCustomCategory('');
   };
 
   const saveEdit = async (cardId: number) => {
@@ -106,6 +129,7 @@ export default function CardCollection() {
         additional_website: editForm.additional_website || null,
         address: editForm.address || null,
         notes: editForm.notes || null,
+        categories: editForm.categories.length > 0 ? editForm.categories : null,
       })
       .eq('id', cardId);
 
@@ -126,6 +150,7 @@ export default function CardCollection() {
               additional_website: editForm.additional_website || null,
               address: editForm.address || null,
               notes: editForm.notes || null,
+              categories: editForm.categories.length > 0 ? editForm.categories : null,
             }
           : c
       ));
@@ -140,20 +165,37 @@ export default function CardCollection() {
     setEditForm({ ...editForm, [field]: value });
   };
 
+  const toggleEditCategory = (cat: string) => {
+    if (!editForm) return;
+    const cats = editForm.categories.includes(cat)
+      ? editForm.categories.filter(c => c !== cat)
+      : [...editForm.categories, cat];
+    setEditForm({ ...editForm, categories: cats });
+  };
+
+  const addCustomEditCategory = () => {
+    if (!editForm) return;
+    const trimmed = customCategory.trim();
+    if (trimmed && !editForm.categories.includes(trimmed)) {
+      setEditForm({ ...editForm, categories: [...editForm.categories, trimmed] });
+    }
+    setCustomCategory('');
+  };
+
   if (loading) {
-    return <p className="text-gray-500 text-center py-12">Loading your stash...</p>;
+    return <p className="text-center py-12" style={{ color: 'var(--text-muted)' }}>Loading your stash...</p>;
   }
 
   if (cards.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500 mb-4">No cards saved yet.</p>
-        <Link href="/" className="text-blue-600 hover:underline">Scan your first card</Link>
+        <p className="mb-4" style={{ color: 'var(--text-muted)' }}>No cards saved yet.</p>
+        <Link href="/" style={{ color: 'var(--accent)' }} className="hover:underline">Scan your first card</Link>
       </div>
     );
   }
 
-  const fields: { key: keyof EditForm; label: string }[] = [
+  const textFields: { key: keyof Omit<EditForm, 'categories'>; label: string }[] = [
     { key: 'name', label: 'Name' },
     { key: 'company', label: 'Company' },
     { key: 'phone', label: 'Phone' },
@@ -166,126 +208,242 @@ export default function CardCollection() {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {cards.map((card) => (
-        <div key={card.id} className="bg-white border border-gray-200 rounded-lg p-5 space-y-3 shadow-sm">
-          {card.card_image_url && (
-            <Image
-              src={card.card_image_url}
-              alt={card.name || 'Business card'}
-              width={400}
-              height={250}
-              className="w-full h-40 object-cover rounded"
-              unoptimized
-            />
-          )}
-
-          {editingId === card.id && editForm ? (
-            <div className="space-y-3">
-              {fields.map(({ key, label }) => (
-                <div key={key}>
-                  <label className="text-xs font-semibold text-gray-500">{label}</label>
-                  <input
-                    type="text"
-                    value={editForm[key]}
-                    onChange={(e) => updateField(key, e.target.value)}
-                    className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder={label}
-                  />
-                </div>
-              ))}
-              <div className="flex gap-2 pt-1">
-                <button
-                  onClick={() => saveEdit(card.id)}
-                  disabled={saving}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded font-semibold text-sm hover:bg-green-700 disabled:bg-gray-400"
-                >
-                  {saving ? 'Saving...' : 'Save'}
-                </button>
-                <button
-                  onClick={cancelEditing}
-                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded font-semibold text-sm hover:bg-gray-300"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div>
-                {card.name && <h3 className="font-bold text-lg text-gray-900">{card.name}</h3>}
-                {card.company && <p className="text-gray-600">{card.company}</p>}
-                {card.notes && <p className="text-sm text-gray-500 italic">{card.notes}</p>}
-              </div>
-
-              <div className="space-y-1 text-sm">
-                {card.phone && (
-                  <p>
-                    <span className="font-semibold text-gray-600">Phone: </span>
-                    <a href={`tel:${card.phone}`} className="text-blue-600 hover:underline">{card.phone}</a>
-                  </p>
-                )}
-                {card.additional_phone && (
-                  <p>
-                    <span className="font-semibold text-gray-600">Phone 2: </span>
-                    <a href={`tel:${card.additional_phone}`} className="text-blue-600 hover:underline">{card.additional_phone}</a>
-                  </p>
-                )}
-                {card.email && (
-                  <p>
-                    <span className="font-semibold text-gray-600">Email: </span>
-                    <a href={`mailto:${card.email}`} className="text-blue-600 hover:underline">{card.email}</a>
-                  </p>
-                )}
-                {card.website && (
-                  <p>
-                    <span className="font-semibold text-gray-600">Website: </span>
-                    <a href={ensureUrl(card.website)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{card.website}</a>
-                  </p>
-                )}
-                {card.additional_website && (
-                  <p>
-                    <span className="font-semibold text-gray-600">Website 2: </span>
-                    <a href={ensureUrl(card.additional_website)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{card.additional_website}</a>
-                  </p>
-                )}
-                {card.address && (
-                  <p>
-                    <span className="font-semibold text-gray-600">Address: </span>
-                    <span className="text-gray-900">{card.address}</span>
-                  </p>
-                )}
-              </div>
-
-              {card.social_media && (card.social_media.facebook || card.social_media.instagram || card.social_media.linkedin) && (
-                <div className="flex gap-3 text-sm">
-                  {card.social_media.facebook && (
-                    <a href={ensureUrl(card.social_media.facebook)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Facebook</a>
-                  )}
-                  {card.social_media.instagram && (
-                    <a href={ensureUrl(card.social_media.instagram)} target="_blank" rel="noopener noreferrer" className="text-pink-600 hover:underline">Instagram</a>
-                  )}
-                  {card.social_media.linkedin && (
-                    <a href={ensureUrl(card.social_media.linkedin)} target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:underline">LinkedIn</a>
-                  )}
-                </div>
-              )}
-
-              <div className="flex items-center justify-between pt-1">
-                <p className="text-xs text-gray-400">
-                  Added {new Date(card.created_at).toLocaleDateString()}
-                </p>
-                <button
-                  onClick={() => startEditing(card)}
-                  className="px-3 py-1 text-sm text-gray-600 border border-gray-300 rounded hover:bg-gray-100"
-                >
-                  Edit
-                </button>
-              </div>
-            </>
-          )}
+    <div className="space-y-6">
+      {/* Category filter bar */}
+      {allCategories.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
+          <button
+            onClick={() => setActiveFilter(null)}
+            className="px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200"
+            style={{
+              background: activeFilter === null ? 'var(--accent)' : 'var(--border)',
+              color: activeFilter === null ? '#ffffff' : 'var(--text-muted)',
+            }}
+          >
+            All
+          </button>
+          {allCategories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setActiveFilter(activeFilter === cat ? null : cat)}
+              className="px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200"
+              style={{
+                background: activeFilter === cat ? 'var(--accent)' : 'var(--border)',
+                color: activeFilter === cat ? '#ffffff' : 'var(--text-muted)',
+              }}
+            >
+              {cat}
+            </button>
+          ))}
         </div>
-      ))}
+      )}
+
+      {/* Cards grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {filteredCards.map((card) => (
+          <div key={card.id} className="glass-card card-hover rounded-xl p-5 space-y-3">
+            {card.card_image_url && (
+              <Image
+                src={card.card_image_url}
+                alt={card.name || 'Business card'}
+                width={400}
+                height={250}
+                className="w-full h-40 object-cover rounded-lg"
+                unoptimized
+              />
+            )}
+
+            {editingId === card.id && editForm ? (
+              <div className="space-y-3">
+                {textFields.map(({ key, label }) => (
+                  <div key={key}>
+                    <label className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>{label}</label>
+                    <input
+                      type="text"
+                      value={editForm[key]}
+                      onChange={(e) => updateField(key, e.target.value)}
+                      className="w-full rounded-lg px-3 py-1.5 text-sm transition-colors duration-200 focus:outline-none focus:ring-2"
+                      style={{
+                        background: 'var(--input-bg)',
+                        border: '1px solid var(--input-border)',
+                        color: 'var(--text)',
+                        // @ts-expect-error CSS custom property for focus ring
+                        '--tw-ring-color': 'var(--accent)',
+                      }}
+                      placeholder={label}
+                    />
+                  </div>
+                ))}
+
+                {/* Category picker in edit mode */}
+                <div>
+                  <label className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>Categories</label>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {PRESET_CATEGORIES.map(cat => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => toggleEditCategory(cat)}
+                        className="px-2.5 py-0.5 rounded-full text-xs font-semibold transition-all duration-200"
+                        style={{
+                          background: editForm.categories.includes(cat) ? 'var(--accent)' : 'var(--border)',
+                          color: editForm.categories.includes(cat) ? '#ffffff' : 'var(--text-muted)',
+                        }}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                  {editForm.categories.filter(c => !PRESET_CATEGORIES.includes(c)).length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-1.5">
+                      {editForm.categories.filter(c => !PRESET_CATEGORIES.includes(c)).map(cat => (
+                        <span
+                          key={cat}
+                          className="px-2.5 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1"
+                          style={{ background: 'var(--accent)', color: '#ffffff' }}
+                        >
+                          {cat}
+                          <button type="button" onClick={() => toggleEditCategory(cat)} className="opacity-75 hover:opacity-100">&times;</button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex gap-2 mt-1.5">
+                    <input
+                      type="text"
+                      value={customCategory}
+                      onChange={(e) => setCustomCategory(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomEditCategory(); } }}
+                      placeholder="Custom..."
+                      className="flex-1 rounded-lg px-3 py-1 text-xs focus:outline-none focus:ring-2"
+                      style={{
+                        background: 'var(--input-bg)',
+                        border: '1px solid var(--input-border)',
+                        color: 'var(--text)',
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={addCustomEditCategory}
+                      className="px-2.5 py-1 rounded-lg text-xs font-semibold"
+                      style={{ background: 'var(--border)', color: 'var(--text)' }}
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={() => saveEdit(card.id)}
+                    disabled={saving}
+                    className="flex-1 px-4 py-2 text-white rounded-lg font-semibold text-sm transition-colors duration-200 disabled:opacity-50"
+                    style={{ background: 'var(--accent)' }}
+                  >
+                    {saving ? 'Saving...' : 'Save'}
+                  </button>
+                  <button
+                    onClick={cancelEditing}
+                    className="flex-1 px-4 py-2 rounded-lg font-semibold text-sm transition-colors duration-200"
+                    style={{ background: 'var(--border)', color: 'var(--text)' }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div>
+                  {card.name && <h3 className="font-bold text-lg" style={{ color: 'var(--text)' }}>{card.name}</h3>}
+                  {card.company && <p style={{ color: 'var(--text-muted)' }}>{card.company}</p>}
+                  {card.notes && <p className="text-sm italic" style={{ color: 'var(--text-muted)' }}>{card.notes}</p>}
+                </div>
+
+                {/* Category chips */}
+                {card.categories && card.categories.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {card.categories.map(cat => (
+                      <span
+                        key={cat}
+                        className="px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                        style={{ background: 'var(--border)', color: 'var(--text-muted)' }}
+                      >
+                        {cat}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <div className="space-y-1 text-sm">
+                  {card.phone && (
+                    <p>
+                      <span className="font-semibold" style={{ color: 'var(--text-muted)' }}>Phone: </span>
+                      <a href={`tel:${card.phone}`} className="hover:underline" style={{ color: 'var(--accent)' }}>{card.phone}</a>
+                    </p>
+                  )}
+                  {card.additional_phone && (
+                    <p>
+                      <span className="font-semibold" style={{ color: 'var(--text-muted)' }}>Phone 2: </span>
+                      <a href={`tel:${card.additional_phone}`} className="hover:underline" style={{ color: 'var(--accent)' }}>{card.additional_phone}</a>
+                    </p>
+                  )}
+                  {card.email && (
+                    <p>
+                      <span className="font-semibold" style={{ color: 'var(--text-muted)' }}>Email: </span>
+                      <a href={`mailto:${card.email}`} className="hover:underline" style={{ color: 'var(--accent)' }}>{card.email}</a>
+                    </p>
+                  )}
+                  {card.website && (
+                    <p>
+                      <span className="font-semibold" style={{ color: 'var(--text-muted)' }}>Website: </span>
+                      <a href={ensureUrl(card.website)} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: 'var(--accent)' }}>{card.website}</a>
+                    </p>
+                  )}
+                  {card.additional_website && (
+                    <p>
+                      <span className="font-semibold" style={{ color: 'var(--text-muted)' }}>Website 2: </span>
+                      <a href={ensureUrl(card.additional_website)} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: 'var(--accent)' }}>{card.additional_website}</a>
+                    </p>
+                  )}
+                  {card.address && (
+                    <p>
+                      <span className="font-semibold" style={{ color: 'var(--text-muted)' }}>Address: </span>
+                      <span style={{ color: 'var(--text)' }}>{card.address}</span>
+                    </p>
+                  )}
+                </div>
+
+                {card.social_media && (card.social_media.facebook || card.social_media.instagram || card.social_media.linkedin) && (
+                  <div className="flex gap-3 text-sm">
+                    {card.social_media.facebook && (
+                      <a href={ensureUrl(card.social_media.facebook)} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: 'var(--accent)' }}>Facebook</a>
+                    )}
+                    {card.social_media.instagram && (
+                      <a href={ensureUrl(card.social_media.instagram)} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: 'var(--accent)' }}>Instagram</a>
+                    )}
+                    {card.social_media.linkedin && (
+                      <a href={ensureUrl(card.social_media.linkedin)} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: 'var(--accent)' }}>LinkedIn</a>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between pt-1">
+                  <p className="text-xs" style={{ color: 'var(--text-muted)', opacity: 0.7 }}>
+                    Added {new Date(card.created_at).toLocaleDateString()}
+                  </p>
+                  <button
+                    onClick={() => startEditing(card)}
+                    className="px-3 py-1 text-sm rounded-lg transition-colors duration-200"
+                    style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}
+                  >
+                    Edit
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

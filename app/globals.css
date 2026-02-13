@@ -1,26 +1,104 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Theme variables */
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --bg-card: #ffffff;
+  --text: #0f172a;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --input-bg: #ffffff;
+  --input-border: #cbd5e1;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.08), 0 4px 10px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="dark"] {
+  --bg: #0f0f14;
+  --bg-card: rgba(30, 30, 40, 0.7);
+  --text: #f1f5f9;
+  --text-muted: #94a3b8;
+  --border: rgba(148, 163, 184, 0.15);
+  --accent: #818cf8;
+  --accent-hover: #6366f1;
+  --input-bg: rgba(15, 15, 20, 0.6);
+  --input-border: rgba(148, 163, 184, 0.2);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 12px rgba(129, 140, 248, 0.05);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.4), 0 0 20px rgba(129, 140, 248, 0.08);
+}
+
+[data-theme="bold"] {
+  --bg: linear-gradient(135deg, #7c3aed, #3b82f6, #ec4899);
+  --bg-card: rgba(255, 255, 255, 0.92);
+  --text: #1e1b4b;
+  --text-muted: #6366f1;
+  --border: rgba(139, 92, 246, 0.2);
+  --accent: #7c3aed;
+  --accent-hover: #6d28d9;
+  --input-bg: #ffffff;
+  --input-border: rgba(139, 92, 246, 0.3);
+  --shadow: 0 1px 3px rgba(124, 58, 237, 0.1), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 25px rgba(124, 58, 237, 0.15), 0 4px 10px rgba(0, 0, 0, 0.06);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Smooth theme transitions */
+body,
+body * {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Light & dark: solid background */
+[data-theme="light"] body,
+[data-theme="dark"] body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Bold: gradient background */
+[data-theme="bold"] body {
+  background: linear-gradient(135deg, #7c3aed, #3b82f6, #ec4899);
+  background-attachment: fixed;
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* Glassmorphism card (used on dark theme) */
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+/* Card hover lift */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Upload area glow on hover */
+.upload-area {
+  border: 2px dashed var(--border);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.upload-area:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.15);
 }

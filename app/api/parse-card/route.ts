@@ -7,14 +7,18 @@ const anthropic = new Anthropic({
 
 export async function POST(request: NextRequest) {
   try {
-    const { text } = await request.json();
+    const { text, source } = await request.json();
+
+    const contextLine = source === 'qr'
+      ? 'This text was decoded from a QR code. It may be in vCard/vCF format, meCard format, a URL, or plain text with contact information.'
+      : 'This text was extracted via OCR from a business card photo.';
 
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1024,
       messages: [{
         role: 'user',
-        content: `Parse this business card text and extract structured information. Return ONLY valid JSON (no markdown, no code blocks, just raw JSON) with these fields:
+        content: `Parse this contact information and extract structured data. Return ONLY valid JSON (no markdown, no code blocks, just raw JSON) with these fields:
 {
   "name": "person or business name",
   "company": "company name if different from person name",
@@ -29,10 +33,13 @@ export async function POST(request: NextRequest) {
     "instagram": "url if present",
     "linkedin": "url if present"
   },
-  "notes": "any other relevant info like job title, tagline, etc."
+  "notes": "any other relevant info like job title, tagline, etc.",
+  "categories": ["suggest 1-2 categories from this list: Restaurant, Retail, Service, Health, Tech, Finance, Creative, Education, Real Estate, Other"]
 }
 
-Business card text:
+${contextLine}
+
+Text:
 ${text}`
       }]
     });
@@ -44,7 +51,7 @@ ${text}`
       if (jsonText.startsWith('```')) {
         jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
       }
-      
+
       const parsed = JSON.parse(jsonText);
       return NextResponse.json(parsed);
     }
