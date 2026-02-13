@@ -18,16 +18,18 @@ export async function POST(request: NextRequest) {
 {
   "name": "person or business name",
   "company": "company name if different from person name",
-  "phone": "phone number",
+  "phone": "primary phone number",
+  "additionalPhone": "secondary phone number if present",
   "email": "email address",
   "website": "primary website URL",
-  "additionalWebsites": ["array of additional URLs"],
+  "additionalWebsite": "secondary website URL if present",
   "address": "physical address if present",
   "socialMedia": {
     "facebook": "url if present",
     "instagram": "url if present",
     "linkedin": "url if present"
-  }
+  },
+  "notes": "any other relevant info like job title, tagline, etc."
 }
 
 Business card text:

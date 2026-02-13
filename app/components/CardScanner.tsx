@@ -9,15 +9,17 @@ interface ParsedCard {
   name: string;
   company: string;
   phone: string;
+  additionalPhone: string;
   email: string;
   website: string;
-  additionalWebsites: string[];
+  additionalWebsite: string;
   address: string;
   socialMedia: {
     facebook?: string;
     instagram?: string;
     linkedin?: string;
   };
+  notes: string;
 }
 
 export default function CardScanner() {
@@ -89,12 +91,14 @@ export default function CardScanner() {
             name: parsedData.name || null,
             company: parsedData.company || null,
             phone: parsedData.phone || null,
+            additional_phone: parsedData.additionalPhone || null,
             email: parsedData.email || null,
             website: parsedData.website || null,
-            additional_websites: parsedData.additionalWebsites || null,
+            additional_website: parsedData.additionalWebsite || null,
             address: parsedData.address || null,
             social_media: parsedData.socialMedia || null,
-            card_image_url: image, // Save the base64 image for now
+            notes: parsedData.notes || null,
+            card_image_url: image,
           }
         ])
         .select();
@@ -197,7 +201,14 @@ export default function CardScanner() {
                 <p className="text-gray-900">{parsedData.phone}</p>
               </div>
             )}
-            
+
+            {parsedData.additionalPhone && (
+              <div>
+                <label className="text-sm font-semibold text-gray-600">Additional Phone</label>
+                <p className="text-gray-900">{parsedData.additionalPhone}</p>
+              </div>
+            )}
+
             {parsedData.email && (
               <div>
                 <label className="text-sm font-semibold text-gray-600">Email</label>
@@ -212,15 +223,13 @@ export default function CardScanner() {
               </div>
             )}
             
-            {parsedData.additionalWebsites && parsedData.additionalWebsites.length > 0 && (
+            {parsedData.additionalWebsite && (
               <div>
-                <label className="text-sm font-semibold text-gray-600">Additional Websites</label>
-                {parsedData.additionalWebsites.map((url, i) => (
-                  <p key={i} className="text-gray-900">{url}</p>
-                ))}
+                <label className="text-sm font-semibold text-gray-600">Additional Website</label>
+                <p className="text-gray-900">{parsedData.additionalWebsite}</p>
               </div>
             )}
-            
+
             {parsedData.address && (
               <div>
                 <label className="text-sm font-semibold text-gray-600">Address</label>
