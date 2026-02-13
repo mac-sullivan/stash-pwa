@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { View, Text, Pressable, Modal, StyleSheet, Alert } from 'react-native';
-import { useState } from 'react';
+import { View, Text, Pressable, Modal, StyleSheet, Alert, Animated } from 'react-native';
+import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
 import { type FontSizeName } from '@/lib/constants';
@@ -27,7 +27,63 @@ function ThemeToggle() {
 function SettingsButton() {
   const { colors, fontSize, setFontSize, fontSizes } = useTheme();
   const { user, signOut } = useAuth();
-  const [visible, setVisible] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const backdropOpacity = useRef(new Animated.Value(0)).current;
+  const sheetTranslateY = useRef(new Animated.Value(60)).current;
+  const sheetOpacity = useRef(new Animated.Value(0)).current;
+
+  const open = () => {
+    backdropOpacity.setValue(0);
+    sheetTranslateY.setValue(60);
+    sheetOpacity.setValue(0);
+    setModalVisible(true);
+  };
+
+  useEffect(() => {
+    if (modalVisible) {
+      Animated.parallel([
+        Animated.timing(backdropOpacity, {
+          toValue: 1,
+          duration: 280,
+          useNativeDriver: true,
+        }),
+        Animated.spring(sheetTranslateY, {
+          toValue: 0,
+          tension: 55,
+          friction: 12,
+          useNativeDriver: true,
+        }),
+        Animated.timing(sheetOpacity, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [modalVisible, backdropOpacity, sheetTranslateY, sheetOpacity]);
+
+  const close = () => {
+    Animated.parallel([
+      Animated.timing(backdropOpacity, {
+        toValue: 0,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+      Animated.timing(sheetTranslateY, {
+        toValue: 60,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+      Animated.timing(sheetOpacity, {
+        toValue: 0,
+        duration: 180,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setModalVisible(false);
+    });
+  };
 
   const handleSignOut = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -36,7 +92,7 @@ function SettingsButton() {
         text: 'Sign Out',
         style: 'destructive',
         onPress: async () => {
-          setVisible(false);
+          close();
           await signOut();
         },
       },
@@ -45,20 +101,30 @@ function SettingsButton() {
 
   return (
     <>
-      <Pressable onPress={() => setVisible(true)} style={styles.iconBtnLeft}>
+      <Pressable onPress={open} style={styles.iconBtnLeft}>
         <Ionicons name="settings-outline" size={22} color={colors.headerText} />
       </Pressable>
 
       <Modal
-        visible={visible}
+        visible={modalVisible}
         transparent
-        animationType="slide"
-        onRequestClose={() => setVisible(false)}
+        animationType="none"
+        onRequestClose={close}
       >
-        <Pressable style={styles.backdrop} onPress={() => setVisible(false)}>
-          <View
-            style={[styles.sheet, { backgroundColor: colors.bgCard }]}
-            onStartShouldSetResponder={() => true}
+        <View style={styles.modalRoot}>
+          {/* Animated backdrop */}
+          <Animated.View
+            style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.4)', opacity: backdropOpacity }]}
+          />
+          <Pressable style={StyleSheet.absoluteFill} onPress={close} />
+
+          {/* Animated sheet */}
+          <Animated.View
+            style={[styles.sheet, {
+              backgroundColor: colors.bgCard,
+              opacity: sheetOpacity,
+              transform: [{ translateY: sheetTranslateY }],
+            }]}
           >
             <View style={[styles.handle, { backgroundColor: colors.border }]} />
 
@@ -107,13 +173,13 @@ function SettingsButton() {
 
             <AnimatedPressable
               scaleDown={0.95}
-              onPress={() => setVisible(false)}
+              onPress={close}
               style={[styles.doneBtn, { backgroundColor: colors.accent }]}
             >
               <Text style={[styles.doneBtnText, { fontSize: fontSizes.base }]}>Done</Text>
             </AnimatedPressable>
-          </View>
-        </Pressable>
+          </Animated.View>
+        </View>
       </Modal>
     </>
   );
@@ -201,9 +267,8 @@ const styles = StyleSheet.create({
     marginRight: 16,
     padding: 4,
   },
-  backdrop: {
+  modalRoot: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
   },
   sheet: {

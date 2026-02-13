@@ -21,6 +21,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [resetSent, setResetSent] = useState(false);
 
   const handleEmailAuth = async () => {
     setErrorMsg('');
@@ -106,6 +107,24 @@ export default function LoginScreen() {
       setErrorMsg(error?.message || 'Google sign-in failed.');
     } finally {
       setGoogleLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    setErrorMsg('');
+    if (!email.trim()) {
+      setErrorMsg('Enter your email address first.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
+      if (error) throw error;
+      setResetSent(true);
+    } catch (error: any) {
+      setErrorMsg(error?.message || 'Failed to send reset email.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -195,6 +214,22 @@ export default function LoginScreen() {
             }]}
           />
 
+          {/* Forgot Password (sign-in mode only) */}
+          {!isSignUp && !resetSent && (
+            <Pressable onPress={handleResetPassword} style={styles.forgotRow}>
+              <Text style={[styles.forgotText, { color: colors.accent }]}>Forgot password?</Text>
+            </Pressable>
+          )}
+
+          {/* Reset email sent confirmation */}
+          {resetSent && (
+            <View style={[styles.resetBanner, { backgroundColor: colors.accent + '18' }]}>
+              <Text style={[styles.resetBannerText, { color: colors.accent }]}>
+                Check your email for a password reset link.
+              </Text>
+            </View>
+          )}
+
           {/* Error message */}
           {errorMsg ? (
             <Text style={styles.errorText}>{errorMsg}</Text>
@@ -212,7 +247,7 @@ export default function LoginScreen() {
             <Text style={styles.primaryBtnText}>{buttonLabel}</Text>
           </Pressable>
 
-          <Pressable onPress={() => { setIsSignUp(!isSignUp); setErrorMsg(''); }} style={styles.toggleRow}>
+          <Pressable onPress={() => { setIsSignUp(!isSignUp); setErrorMsg(''); setResetSent(false); }} style={styles.toggleRow}>
             <Text style={[styles.toggleText, { color: colors.textMuted }]}>
               {isSignUp ? 'Already have an account?' : "Don't have an account?"}
               {' '}
@@ -292,6 +327,25 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 16,
     marginBottom: 12,
+  },
+  forgotRow: {
+    alignItems: 'flex-end',
+    marginBottom: 4,
+    marginTop: -4,
+  },
+  forgotText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  resetBanner: {
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
+  },
+  resetBannerText: {
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   errorText: {
     color: '#ef4444',
