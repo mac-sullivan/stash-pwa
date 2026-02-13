@@ -276,43 +276,27 @@ export default function CollectionScreen() {
     );
   };
 
-  const removeUnusedCategory = (cat: string) => {
-    // Count how many OTHER cards (not the one being edited) use this category
-    const otherCards = cards.filter(c => c.id !== editingId && c.categories?.includes(cat));
-    const otherCount = otherCards.length;
-
-    const message = otherCount > 0
-      ? `"${cat}" is also used by ${otherCount} other card${otherCount === 1 ? '' : 's'}. Remove it from all cards?`
-      : `Remove "${cat}"? No other cards are using it.`;
-
-    Alert.alert('Remove Category', message, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            // Remove from all OTHER cards that have this category
-            for (const c of otherCards) {
-              const updated = (c.categories || []).filter(x => x !== cat);
-              await supabase.from('stash').update({
-                categories: updated.length > 0 ? updated : null,
-              }).eq('id', c.id);
-            }
-            // Remove from current card's edit state
-            setEditCategories(prev => prev.filter(c => c !== cat));
-            // Hide from the edit UI immediately
-            setRemovedCategories(prev => [...prev, cat]);
-            // Refresh cards so categoryCounts updates
-            fetchCards();
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          } catch (error) {
-            console.error('Remove category error:', error);
-            Alert.alert('Error', 'Failed to remove category.');
-          }
-        },
-      },
-    ]);
+  const removeUnusedCategory = async (cat: string) => {
+    try {
+      // Remove from ALL cards that have this category (including the current one)
+      const cardsWithCat = cards.filter(c => c.categories?.includes(cat));
+      for (const c of cardsWithCat) {
+        const updated = (c.categories || []).filter(x => x !== cat);
+        await supabase.from('stash').update({
+          categories: updated.length > 0 ? updated : null,
+        }).eq('id', c.id);
+      }
+      // Remove from current card's edit state
+      setEditCategories(prev => prev.filter(c => c !== cat));
+      // Hide from the edit UI immediately
+      setRemovedCategories(prev => [...prev, cat]);
+      // Refresh cards so categoryCounts updates
+      await fetchCards();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      console.error('Remove category error:', error);
+      Alert.alert('Error', 'Failed to remove category.');
+    }
   };
 
   const addEditCustomCategory = () => {
