@@ -174,6 +174,15 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="mycard"
+        options={{
+          title: 'My Card',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person-outline" size={size} color={color} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }

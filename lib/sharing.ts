@@ -1,6 +1,8 @@
-import type { StashCard } from './types';
+import type { StashCard, MyCard } from './types';
 
-export function formatCardText(card: StashCard): string {
+type ShareableCard = StashCard | MyCard;
+
+export function formatCardText(card: ShareableCard): string {
   const lines: string[] = [];
 
   if (card.name) lines.push(card.name);
