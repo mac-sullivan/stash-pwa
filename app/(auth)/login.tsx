@@ -6,7 +6,6 @@ import {
 } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
-import { makeRedirectUri } from 'expo-auth-session';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/lib/theme';
 import { supabase } from '@/lib/supabase';
@@ -73,7 +72,7 @@ export default function LoginScreen() {
     setErrorMsg('');
     setGoogleLoading(true);
     try {
-      const redirectUrl = makeRedirectUri();
+      const redirectUrl = 'stash://auth/callback';
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -87,7 +86,7 @@ export default function LoginScreen() {
         throw error || new Error('Failed to start Google sign-in.');
       }
 
-      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+      const result = await WebBrowser.openAuthSessionAsync(data.url, 'stash://');
 
       if (result.type === 'success') {
         const url = result.url;
