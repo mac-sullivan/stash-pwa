@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useNavigation } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import QRCode from 'react-native-qrcode-svg';
 import { useTheme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
@@ -83,6 +84,9 @@ function parsedToForm(parsed: ParsedCard): FormData {
 
 export default function MyCardScreen() {
   const { colors, fontSizes, fontFamily } = useTheme();
+  const insets = useSafeAreaInsets();
+  const headerHeight = insets.top + 56;
+  const tabBarHeight = insets.bottom + 49;
   const { user } = useAuth();
   const navigation = useNavigation();
 
@@ -737,7 +741,7 @@ export default function MyCardScreen() {
   return (
     <ScrollView
       style={[s.container, { backgroundColor: colors.bg }]}
-      contentContainerStyle={s.content}
+      contentContainerStyle={[s.content, { paddingTop: headerHeight + 16, paddingBottom: tabBarHeight + 20 }]}
       keyboardShouldPersistTaps="handled"
     >
       <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
@@ -753,7 +757,7 @@ export default function MyCardScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 16, paddingBottom: 40 },
+  content: { paddingHorizontal: 16 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   card: {
     borderWidth: 0.5,

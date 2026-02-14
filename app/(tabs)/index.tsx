@@ -9,6 +9,7 @@ import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'ex
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
 import { parseCardImage, parseQrText } from '@/lib/api';
@@ -50,6 +51,9 @@ function FadeInView({ children, visible }: { children: React.ReactNode; visible:
 
 export default function ScanScreen() {
   const { colors, fontSizes, fontFamily } = useTheme();
+  const insets = useSafeAreaInsets();
+  const headerHeight = insets.top + 56;
+  const tabBarHeight = insets.bottom + 49;
   const { user } = useAuth();
   const [mode, setMode] = useState<ScanMode>('card');
   const [images, setImages] = useState<string[]>([]);
@@ -405,7 +409,7 @@ export default function ScanScreen() {
   };
 
   return (
-    <ScrollView style={[s.container, { backgroundColor: colors.bg }]} contentContainerStyle={s.content}>
+    <ScrollView style={[s.container, { backgroundColor: colors.bg }]} contentContainerStyle={[s.content, { paddingTop: headerHeight + 16, paddingBottom: tabBarHeight + 20 }]}>
       {/* Mode Toggle */}
       <View style={[s.modeToggle, { borderColor: colors.border }]}>
         <AnimatedPressable
@@ -552,7 +556,7 @@ export default function ScanScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 16, paddingBottom: 40 },
+  content: { paddingHorizontal: 16 },
   modeToggle: {
     flexDirection: 'row',
     borderWidth: 1,

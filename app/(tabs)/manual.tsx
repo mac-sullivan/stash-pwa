@@ -7,6 +7,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
@@ -60,6 +61,9 @@ const EXTRA_FIELDS: FieldDef[] = [
 
 export default function ManualScreen() {
   const { colors, fontSizes, fontFamily } = useTheme();
+  const insets = useSafeAreaInsets();
+  const headerHeight = insets.top + 56;
+  const tabBarHeight = insets.bottom + 49;
   const { user } = useAuth();
   const [form, setForm] = useState<FormData>({ ...EMPTY_FORM });
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -190,7 +194,7 @@ export default function ManualScreen() {
   return (
     <ScrollView
       style={[s.container, { backgroundColor: colors.bg }]}
-      contentContainerStyle={s.content}
+      contentContainerStyle={[s.content, { paddingTop: headerHeight + 16, paddingBottom: tabBarHeight + 20 }]}
       keyboardShouldPersistTaps="handled"
     >
       <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
@@ -342,7 +346,7 @@ export default function ManualScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 16, paddingBottom: 40 },
+  content: { paddingHorizontal: 16 },
   card: {
     borderWidth: 0.5,
     borderRadius: 8,

@@ -13,6 +13,8 @@ import { PRESET_CATEGORIES, cardShadow } from '@/lib/constants';
 import type { StashCard } from '@/lib/types';
 import { formatCardText, formatCategoryCards } from '@/lib/sharing';
 import { useFocusEffect } from 'expo-router';
+import { useHeaderHeight } from '@react-navigation/elements';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import ImageLightbox from '@/components/ImageLightbox';
 import AnimatedPressable from '@/components/AnimatedPressable';
 
@@ -74,6 +76,8 @@ function ChevronAnimated({ expanded, color }: { expanded: boolean; color: string
 
 export default function CollectionScreen() {
   const { colors, fontSizes, fontFamily } = useTheme();
+  const headerHeight = useHeaderHeight();
+  const tabBarHeight = useBottomTabBarHeight();
   const [cards, setCards] = useState<StashCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -874,7 +878,7 @@ export default function CollectionScreen() {
         data={filteredAndSorted}
         keyExtractor={item => `${item.id}-${animKey}`}
         renderItem={renderCard}
-        contentContainerStyle={s.listContent}
+        contentContainerStyle={[s.listContent, { paddingTop: headerHeight + 16, paddingBottom: tabBarHeight + 20 }]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.link} />
         }
@@ -919,14 +923,12 @@ export default function CollectionScreen() {
       />
 
       {/* FAB */}
-      <AnimatedPressable
-        scaleDown={0.9}
+      <Pressable
         onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); openSheet(); }}
-        style={[s.fab, { backgroundColor: colors.accent }]}
+        style={[s.fab, { backgroundColor: colors.accent, bottom: tabBarHeight + 20 }]}
       >
         <Ionicons name="funnel-outline" size={22} color="#f7f7f7" />
-        {filtersActive && <View style={[s.fabBadge, { backgroundColor: colors.link }]} />}
-      </AnimatedPressable>
+      </Pressable>
 
       {/* Bottom Sheet Modal */}
       <Modal
@@ -1141,7 +1143,7 @@ const s = StyleSheet.create({
   filterCountText: {
     fontWeight: '700',
   },
-  listContent: { padding: 16, paddingBottom: 80 },
+  listContent: { paddingHorizontal: 16 },
   // Active filter pill bar
   activeFilterBar: {
     flexDirection: 'row',
@@ -1183,7 +1185,7 @@ const s = StyleSheet.create({
   // FAB
   fab: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 0,
     right: 20,
     width: 52,
     height: 52,
@@ -1191,14 +1193,6 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     boxShadow: '0px 4px 12px rgba(0,0,0,0.25)',
-  },
-  fabBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
   },
   // Bottom sheet
   modalRoot: {

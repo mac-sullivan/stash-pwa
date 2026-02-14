@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { View, Text, Pressable, Modal, StyleSheet, Alert, Animated } from 'react-native';
+import Svg, { Defs, LinearGradient as SvgGradient, Stop, Rect } from 'react-native-svg';
 import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
@@ -226,24 +227,57 @@ function HeaderTitle() {
 }
 
 export default function TabLayout() {
-  const { colors } = useTheme();
+  const { theme, colors } = useTheme();
+  const solidColor = theme === 'dark' ? '#1e1e28' : '#f7f7f7';
+
+  const HeaderFade = () => (
+    <View style={{ ...StyleSheet.absoluteFillObject, bottom: -14 }}>
+      <Svg width="100%" height="100%" preserveAspectRatio="none">
+        <Defs>
+          <SvgGradient id="headerGrad" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={solidColor} stopOpacity={1} />
+            <Stop offset="0.6" stopColor={solidColor} stopOpacity={0.8} />
+            <Stop offset="1" stopColor={solidColor} stopOpacity={0} />
+          </SvgGradient>
+        </Defs>
+        <Rect x="0" y="0" width="100%" height="100%" fill="url(#headerGrad)" />
+      </Svg>
+    </View>
+  );
+
+  const TabBarFade = () => (
+    <View style={{ ...StyleSheet.absoluteFillObject, top: -14 }}>
+      <Svg width="100%" height="100%" preserveAspectRatio="none">
+        <Defs>
+          <SvgGradient id="tabGrad" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={solidColor} stopOpacity={0} />
+            <Stop offset="0.15" stopColor={solidColor} stopOpacity={0.7} />
+            <Stop offset="0.35" stopColor={solidColor} stopOpacity={0.92} />
+            <Stop offset="1" stopColor={solidColor} stopOpacity={1} />
+          </SvgGradient>
+        </Defs>
+        <Rect x="0" y="0" width="100%" height="100%" fill="url(#tabGrad)" />
+      </Svg>
+    </View>
+  );
 
   return (
     <Tabs
       screenOptions={{
-        headerStyle: {
-          backgroundColor: colors.headerBg,
-        },
+        headerTransparent: true,
         headerShadowVisible: false,
         headerTintColor: colors.headerText,
         headerTitle: () => <HeaderTitle />,
+        headerBackground: () => <HeaderFade />,
         tabBarStyle: {
-          backgroundColor: colors.bgCard,
-          borderTopColor: colors.border,
-          borderTopWidth: 0.5,
+          position: 'absolute',
+          backgroundColor: 'transparent',
+          borderTopWidth: 0,
+          elevation: 0,
         },
-        tabBarActiveTintColor: colors.link,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarBackground: () => <TabBarFade />,
+        tabBarActiveTintColor: theme === 'dark' ? colors.link : '#688D2D',
+        tabBarInactiveTintColor: theme === 'dark' ? '#f7f7f7' : '#575757',
         headerLeft: () => <SettingsButton />,
         headerRight: () => <ThemeToggle />,
       }}
