@@ -200,12 +200,16 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: colors.headerBg },
+        headerStyle: {
+          backgroundColor: colors.headerBg,
+        },
+        headerShadowVisible: false,
         headerTintColor: colors.headerText,
         headerTitle: () => <HeaderTitle />,
         tabBarStyle: {
           backgroundColor: colors.bgCard,
           borderTopColor: colors.border,
+          borderTopWidth: 0.5,
         },
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textMuted,
@@ -256,8 +260,8 @@ export default function TabLayout() {
 const styles = StyleSheet.create({
   headerTitle: {
     fontFamily: 'PlayfairDisplay-Bold',
-    fontSize: 22,
-    letterSpacing: 0.5,
+    fontSize: 24,
+    letterSpacing: 1,
   },
   iconBtnLeft: {
     marginLeft: 16,
@@ -276,11 +280,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     padding: 20,
     paddingBottom: 40,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 8,
+    boxShadow: '0px -4px 12px rgba(0,0,0,0.2)',
   },
   handle: {
     width: 40,
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   signOutBtn: {
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderRadius: 12,
     borderWidth: 1,
     marginTop: 24,
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
   },
   doneBtn: {
     marginTop: 12,
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
   },

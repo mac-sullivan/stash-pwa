@@ -9,7 +9,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/lib/theme';
 import { supabase } from '@/lib/supabase';
-import { PRESET_CATEGORIES } from '@/lib/constants';
+import { PRESET_CATEGORIES, cardShadow } from '@/lib/constants';
 import type { StashCard } from '@/lib/types';
 import { formatCardText, formatCategoryCards } from '@/lib/sharing';
 import { useFocusEffect } from 'expo-router';
@@ -363,7 +363,7 @@ export default function CollectionScreen() {
           onPress={() => {
             if (!isEditing) toggleExpand(card.id);
           }}
-          style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
+          style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border, ...cardShadow(colors.cardShadow) }]}
         >
           {/* Top section: info + image side by side */}
           <View style={s.cardTop}>
@@ -849,11 +849,13 @@ export default function CollectionScreen() {
         }
         ListEmptyComponent={
           <View style={s.emptyState}>
-            <Text style={[s.emptyIcon]}>📇</Text>
+            <View style={[s.iconCircle, { backgroundColor: colors.accent + '12' }]}>
+              <Ionicons name="layers-outline" size={36} color={colors.accent} />
+            </View>
             <Text style={[s.emptyTitle, { color: colors.text, fontSize: fontSizes.xl }]}>
               {activeFilters.length > 0 ? 'No cards match these filters' : 'No cards yet'}
             </Text>
-            <Text style={[s.emptySub, { color: colors.textMuted, fontSize: fontSizes.base }]}>
+            <Text style={[s.emptySub, { color: colors.textMuted, fontSize: fontSizes.base, lineHeight: 22 }]}>
               {activeFilters.length > 0 ? 'Try different filters' : 'Scan a business card or QR code to get started'}
             </Text>
           </View>
@@ -954,11 +956,7 @@ const s = StyleSheet.create({
     gap: 6,
   },
   filterChipActive: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    boxShadow: '0px 2px 4px rgba(0,0,0,0.2)',
   },
   filterChipText: { fontWeight: '600' },
   filterCount: {
@@ -973,7 +971,7 @@ const s = StyleSheet.create({
   },
   listContent: { padding: 16, paddingBottom: 40 },
   card: {
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderRadius: 16,
     overflow: 'hidden',
     padding: 16,
@@ -1027,20 +1025,20 @@ const s = StyleSheet.create({
     marginTop: 12,
   },
   field: { marginBottom: 12 },
-  label: { fontWeight: '600', marginBottom: 2 },
+  label: { fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.2, marginBottom: 6 },
   value: {},
   socialLink: { marginTop: 4 },
   editInput: {
     borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   row: { flexDirection: 'row', alignItems: 'center' },
   smallBtn: {
     paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingVertical: 14,
+    borderRadius: 12,
     marginLeft: 8,
   },
   smallBtnText: { fontWeight: '600' },
@@ -1052,9 +1050,9 @@ const s = StyleSheet.create({
     borderTopWidth: 1,
   },
   actionBtn: {
-    paddingVertical: 12,
+    paddingVertical: 16,
     paddingHorizontal: 20,
-    borderRadius: 10,
+    borderRadius: 12,
     alignItems: 'center',
   },
   actionBtnText: { color: '#fff', fontWeight: '600' },
@@ -1095,7 +1093,14 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   emptyState: { alignItems: 'center', paddingTop: 60 },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
+  iconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   emptyTitle: { fontWeight: '600', marginBottom: 4 },
   emptySub: { textAlign: 'center' },
 });

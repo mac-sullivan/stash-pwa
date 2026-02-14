@@ -9,6 +9,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/lib/theme';
 import { supabase } from '@/lib/supabase';
+import { cardShadow } from '@/lib/constants';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -151,7 +152,7 @@ export default function LoginScreen() {
         </View>
 
         {/* Auth card */}
-        <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+        <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border, ...cardShadow(colors.cardShadow) }]}>
           {/* Apple Sign In */}
           {Platform.OS === 'ios' && (
             <AppleAuthentication.AppleAuthenticationButton
@@ -283,7 +284,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   card: {
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderRadius: 20,
     padding: 24,
   },
@@ -354,7 +355,7 @@ const styles = StyleSheet.create({
   },
   primaryBtn: {
     flexDirection: 'row',
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -362,8 +363,9 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     color: '#fff',
-    fontWeight: '700',
+    fontWeight: '600',
     fontSize: 16,
+    letterSpacing: 0.3,
   },
   toggleRow: {
     marginTop: 16,

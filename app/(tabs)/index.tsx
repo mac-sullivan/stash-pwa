@@ -4,6 +4,7 @@ import {
   StyleSheet, Alert, ActivityIndicator, Animated, LayoutAnimation,
   Platform, UIManager,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
@@ -12,7 +13,7 @@ import { useTheme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
 import { parseCardImage, parseQrText } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
-import { PRESET_CATEGORIES } from '@/lib/constants';
+import { PRESET_CATEGORIES, cardShadow } from '@/lib/constants';
 import type { ParsedCard } from '@/lib/types';
 import AnimatedPressable from '@/components/AnimatedPressable';
 
@@ -355,7 +356,7 @@ export default function ScanScreen() {
     ];
 
     return (
-      <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+      <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border, ...cardShadow(colors.cardShadow) }]}>
         <Text style={[s.cardTitle, { color: colors.text, fontSize: fontSizes.lg }]}>Extracted Information</Text>
         <Text style={[s.editHint, { color: colors.textMuted, fontSize: fontSizes.xs }]}>Tap any field to edit before saving</Text>
 
@@ -425,7 +426,7 @@ export default function ScanScreen() {
 
       {/* Card Mode */}
       {mode === 'card' && !parsedData && !isProcessing && (
-        <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+        <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border, ...cardShadow(colors.cardShadow) }]}>
           {images.length > 0 ? (
             <>
               <Image source={{ uri: images[coverIndex] || images[0] }} style={s.previewImage} resizeMode="contain" />
@@ -463,9 +464,11 @@ export default function ScanScreen() {
             </>
           ) : (
             <View style={s.uploadArea}>
-              <Text style={s.uploadIcon}>📸</Text>
+              <View style={[s.iconCircle, { backgroundColor: colors.accent + '12' }]}>
+                <Ionicons name="camera-outline" size={36} color={colors.accent} />
+              </View>
               <Text style={[s.uploadTitle, { color: colors.text, fontSize: fontSizes.lg }]}>Scan Business Card</Text>
-              <Text style={[s.uploadSub, { color: colors.textMuted, fontSize: fontSizes.sm }]}>Take a photo or choose from gallery</Text>
+              <Text style={[s.uploadSub, { color: colors.textMuted, fontSize: fontSizes.sm, lineHeight: 20 }]}>Take a photo or choose from gallery</Text>
               <View style={[s.row, { marginTop: 16 }]}>
                 <AnimatedPressable scaleDown={0.95} onPress={() => pickImage(true)}
                   style={[s.primaryBtn, { flex: 1, marginTop: 0, backgroundColor: colors.accent }]}>
@@ -484,7 +487,7 @@ export default function ScanScreen() {
 
       {/* QR Mode */}
       {mode === 'qr' && !parsedData && !isProcessing && (
-        <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border, overflow: 'hidden' }]}>
+        <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border, overflow: 'hidden', ...cardShadow(colors.cardShadow) }]}>
           {cameraActive ? (
             <>
               <CameraView
@@ -499,9 +502,11 @@ export default function ScanScreen() {
             </>
           ) : (
             <View style={s.uploadArea}>
-              <Text style={s.uploadIcon}>📱</Text>
+              <View style={[s.iconCircle, { backgroundColor: colors.accent + '12' }]}>
+                <Ionicons name="qr-code-outline" size={36} color={colors.accent} />
+              </View>
               <Text style={[s.uploadTitle, { color: colors.text, fontSize: fontSizes.lg }]}>Scan QR Code</Text>
-              <Text style={[s.uploadSub, { color: colors.textMuted, fontSize: fontSizes.sm }]}>Point camera at a QR code</Text>
+              <Text style={[s.uploadSub, { color: colors.textMuted, fontSize: fontSizes.sm, lineHeight: 20 }]}>Point camera at a QR code</Text>
               <View style={[s.row, { marginTop: 16 }]}>
                 <AnimatedPressable scaleDown={0.95} onPress={startQrCamera}
                   style={[s.primaryBtn, { flex: 1, marginTop: 0, backgroundColor: colors.accent }]}>
@@ -520,7 +525,7 @@ export default function ScanScreen() {
 
       {/* Processing */}
       {isProcessing && (
-        <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border, alignItems: 'center', padding: 40 }]}>
+        <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border, alignItems: 'center', padding: 40, ...cardShadow(colors.cardShadow) }]}>
           <ActivityIndicator size="large" color={colors.accent} />
           <Text style={[s.uploadTitle, { color: colors.text, marginTop: 16, fontSize: fontSizes.lg }]}>
             {mode === 'card' ? 'Analyzing card...' : 'Processing QR data...'}
@@ -560,7 +565,7 @@ const s = StyleSheet.create({
     fontWeight: '600',
   },
   card: {
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderRadius: 16,
     padding: 20,
     marginBottom: 12,
@@ -576,7 +581,14 @@ const s = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 24,
   },
-  uploadIcon: { fontSize: 48, marginBottom: 12 },
+  iconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   uploadTitle: { fontWeight: '600', marginBottom: 4 },
   uploadSub: { marginBottom: 8 },
   previewImage: {
@@ -629,7 +641,7 @@ const s = StyleSheet.create({
   },
   section: { marginTop: 16 },
   field: { marginBottom: 12 },
-  label: { fontWeight: '600', marginBottom: 2 },
+  label: { fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.2, marginBottom: 6 },
   value: {},
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 },
   chip: {
@@ -641,9 +653,9 @@ const s = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
   input: {
     borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   inputMultiline: {
     minHeight: 60,
@@ -651,13 +663,13 @@ const s = StyleSheet.create({
   },
   smallBtn: {
     paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 10,
+    paddingVertical: 14,
+    borderRadius: 12,
     marginLeft: 8,
   },
   smallBtnText: { fontWeight: '600' },
   primaryBtn: {
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 16,
@@ -665,9 +677,10 @@ const s = StyleSheet.create({
   primaryBtnText: {
     color: '#fff',
     fontWeight: '600',
+    letterSpacing: 0.3,
   },
   secondaryBtn: {
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
   },

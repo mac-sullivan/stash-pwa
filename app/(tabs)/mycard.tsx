@@ -15,6 +15,7 @@ import { supabase } from '@/lib/supabase';
 import { parseCardImage } from '@/lib/api';
 import { formatCardText } from '@/lib/sharing';
 import type { MyCard, ParsedCard } from '@/lib/types';
+import { cardShadow } from '@/lib/constants';
 import AnimatedPressable from '@/components/AnimatedPressable';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -356,9 +357,11 @@ export default function MyCardScreen() {
   const renderList = () => {
     if (cards.length === 0) {
       return (
-        <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+        <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border, ...cardShadow(colors.cardShadow) }]}>
           <View style={s.emptyArea}>
-            <Ionicons name="person-add-outline" size={48} color={colors.textMuted} />
+            <View style={[s.iconCircle, { backgroundColor: colors.accent + '12' }]}>
+              <Ionicons name="person-add-outline" size={36} color={colors.accent} />
+            </View>
             <Text style={[s.emptyTitle, { color: colors.text, fontSize: fontSizes.lg }]}>
               Create Your Card
             </Text>
@@ -384,7 +387,7 @@ export default function MyCardScreen() {
             key={card.id}
             scaleDown={0.97}
             onPress={() => { setSelectedCard(card); navigate('detail'); }}
-            style={[s.listCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
+            style={[s.listCard, { backgroundColor: colors.bgCard, borderColor: colors.border, ...cardShadow(colors.cardShadow) }]}
           >
             <View style={s.listCardRow}>
               {card.card_image_url ? (
@@ -452,7 +455,7 @@ export default function MyCardScreen() {
           </AnimatedPressable>
         )}
 
-        <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+        <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border, ...cardShadow(colors.cardShadow) }]}>
           {card.card_image_url && (
             <Image source={{ uri: card.card_image_url }} style={s.detailImage} resizeMode="contain" />
           )}
@@ -493,7 +496,7 @@ export default function MyCardScreen() {
         </View>
 
         {/* QR Code */}
-        <View style={[s.card, s.qrCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+        <View style={[s.card, s.qrCard, { backgroundColor: colors.bgCard, borderColor: colors.border, ...cardShadow(colors.cardShadow) }]}>
           <Text style={[s.qrTitle, { color: colors.text, fontSize: fontSizes.base }]}>Scan to get my info</Text>
           <View style={s.qrWrapper}>
             <QRCode value={qrValue} size={200} backgroundColor="white" color="black" />
@@ -549,7 +552,7 @@ export default function MyCardScreen() {
 
   const renderChooseMethod = () => (
     <>
-      <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+      <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border, ...cardShadow(colors.cardShadow) }]}>
         <Text style={[s.title, { color: colors.text, fontSize: fontSizes.lg }]}>New Card</Text>
         <Text style={[s.subtitle, { color: colors.textMuted, fontSize: fontSizes.sm }]}>
           How would you like to create your card?
@@ -600,7 +603,7 @@ export default function MyCardScreen() {
   // --- Render: Scan processing ---
 
   const renderScan = () => (
-    <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border, alignItems: 'center', padding: 40 }]}>
+    <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border, alignItems: 'center', padding: 40, ...cardShadow(colors.cardShadow) }]}>
       {isProcessing ? (
         <>
           <ActivityIndicator size="large" color={colors.accent} />
@@ -641,7 +644,7 @@ export default function MyCardScreen() {
     const isEditing = !!selectedCard;
 
     return (
-      <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+      <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border, ...cardShadow(colors.cardShadow) }]}>
         <Text style={[s.title, { color: colors.text, fontSize: fontSizes.lg }]}>
           {isEditing ? 'Edit Card' : 'New Card'}
         </Text>
@@ -744,7 +747,7 @@ const s = StyleSheet.create({
   content: { padding: 16, paddingBottom: 40 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   card: {
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderRadius: 16,
     padding: 20,
     marginBottom: 12,
@@ -754,13 +757,21 @@ const s = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
 
   // Empty state
+  iconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   emptyArea: { alignItems: 'center', paddingVertical: 24 },
   emptyTitle: { fontWeight: '600', marginTop: 12, marginBottom: 4 },
   emptySub: { textAlign: 'center', marginBottom: 8 },
 
   // List
   listCard: {
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderRadius: 16,
     padding: 16,
     marginBottom: 10,
@@ -815,7 +826,7 @@ const s = StyleSheet.create({
   },
   infoSection: { marginTop: 16 },
   infoRow: { marginBottom: 10 },
-  infoLabel: { fontWeight: '600', marginBottom: 1 },
+  infoLabel: { fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.2, marginBottom: 2 },
   infoValue: {},
   qrCard: { alignItems: 'center' },
   qrTitle: { fontWeight: '600', marginBottom: 16 },
@@ -831,7 +842,7 @@ const s = StyleSheet.create({
   },
   actionBtn: {
     flex: 1,
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
   },
@@ -863,12 +874,12 @@ const s = StyleSheet.create({
 
   // Form
   field: { marginBottom: 14 },
-  label: { fontWeight: '600', marginBottom: 4 },
+  label: { fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.2, marginBottom: 6 },
   input: {
     borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   inputMultiline: {
     minHeight: 80,
@@ -906,14 +917,14 @@ const s = StyleSheet.create({
 
   // Buttons
   primaryBtn: {
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 20,
   },
-  primaryBtnText: { color: '#fff', fontWeight: '700' },
+  primaryBtnText: { color: '#fff', fontWeight: '600', letterSpacing: 0.3 },
   secondaryBtn: {
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 10,

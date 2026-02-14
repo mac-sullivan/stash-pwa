@@ -8,7 +8,7 @@ import { useFocusEffect } from 'expo-router';
 import { useTheme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
-import { PRESET_CATEGORIES } from '@/lib/constants';
+import { PRESET_CATEGORIES, cardShadow } from '@/lib/constants';
 import AnimatedPressable from '@/components/AnimatedPressable';
 
 interface FormData {
@@ -181,7 +181,7 @@ export default function ManualScreen() {
       keyboardShouldPersistTaps="handled"
     >
       <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-        <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+        <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border, ...cardShadow(colors.cardShadow) }]}>
           <Text style={[s.cardTitle, { color: colors.text, fontSize: fontSizes.lg }]}>New Contact</Text>
           <Text style={[s.subtitle, { color: colors.textMuted, fontSize: fontSizes.sm }]}>
             Only name is required
@@ -286,7 +286,7 @@ const s = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 16, paddingBottom: 40 },
   card: {
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderRadius: 16,
     padding: 20,
     marginBottom: 12,
@@ -299,12 +299,12 @@ const s = StyleSheet.create({
     marginBottom: 16,
   },
   field: { marginBottom: 14 },
-  label: { fontWeight: '600', marginBottom: 4 },
+  label: { fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.2, marginBottom: 6 },
   input: {
     borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   inputMultiline: {
     minHeight: 80,
@@ -326,17 +326,18 @@ const s = StyleSheet.create({
   },
   smallBtnText: { fontWeight: '600' },
   primaryBtn: {
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 20,
   },
   primaryBtnText: {
     color: '#fff',
-    fontWeight: '700',
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
   secondaryBtn: {
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 10,

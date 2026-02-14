@@ -17,7 +17,16 @@ export interface ThemeColors {
   inputBorder: string;
   headerBg: string;
   headerText: string;
+  cardShadow: string;
 }
+
+export const cardShadow = (color: string) => ({
+  boxShadow: `0px 2px 8px ${color}`,
+});
+
+export const cardShadowLg = (color: string) => ({
+  boxShadow: `0px 4px 16px ${color}`,
+});
 
 export type FontSizeName = 'small' | 'medium' | 'large';
 
@@ -37,17 +46,18 @@ export const FONT_SIZES: Record<FontSizeName, FontSizes> = {
 
 export const themes: Record<ThemeName, ThemeColors> = {
   light: {
-    bg: '#f8fafc',
+    bg: '#f5f5f7',
     bgCard: '#ffffff',
     text: '#0f172a',
     textMuted: '#64748b',
     border: '#e2e8f0',
     accent: '#3b82f6',
     accentHover: '#2563eb',
-    inputBg: '#ffffff',
+    inputBg: '#f0f1f3',
     inputBorder: '#cbd5e1',
     headerBg: '#ffffff',
     headerText: '#0f172a',
+    cardShadow: 'rgba(0,0,0,0.08)',
   },
   dark: {
     bg: '#0f0f14',
@@ -61,5 +71,6 @@ export const themes: Record<ThemeName, ThemeColors> = {
     inputBorder: '#2a2a3a',
     headerBg: '#1e1e28',
     headerText: '#f1f5f9',
+    cardShadow: 'rgba(0,0,0,0.3)',
   },
 };
