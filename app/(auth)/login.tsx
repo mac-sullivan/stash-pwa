@@ -14,7 +14,7 @@ import { cardShadow } from '@/lib/constants';
 WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
-  const { colors } = useTheme();
+  const { colors, fontFamily } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
@@ -146,7 +146,7 @@ export default function LoginScreen() {
           <Text style={[styles.brandTitle, { color: colors.text, fontFamily: 'PlayfairDisplay-Bold' }]}>
             Stash
           </Text>
-          <Text style={[styles.brandSubtitle, { color: colors.textMuted }]}>
+          <Text style={[styles.brandSubtitle, { color: colors.textMuted, fontFamily }]}>
             Your business card vault
           </Text>
         </View>
@@ -158,7 +158,7 @@ export default function LoginScreen() {
             <AppleAuthentication.AppleAuthenticationButton
               buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
               buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-              cornerRadius={12}
+              cornerRadius={8}
               style={styles.socialBtn}
               onPress={handleAppleSignIn}
             />
@@ -175,14 +175,14 @@ export default function LoginScreen() {
             ) : (
               <>
                 <Ionicons name="logo-google" size={18} color={colors.text} style={{ marginRight: 8 }} />
-                <Text style={[styles.googleBtnText, { color: colors.text }]}>Continue with Google</Text>
+                <Text style={[styles.googleBtnText, { color: colors.text, fontFamily }]}>Continue with Google</Text>
               </>
             )}
           </Pressable>
 
           <View style={styles.dividerRow}>
             <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-            <Text style={[styles.dividerText, { color: colors.textMuted }]}>or</Text>
+            <Text style={[styles.dividerText, { color: colors.textMuted, fontFamily }]}>or</Text>
             <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
           </View>
 
@@ -199,6 +199,7 @@ export default function LoginScreen() {
               backgroundColor: colors.inputBg,
               borderColor: colors.inputBorder,
               color: colors.text,
+              fontFamily,
             }]}
           />
           <TextInput
@@ -211,20 +212,21 @@ export default function LoginScreen() {
               backgroundColor: colors.inputBg,
               borderColor: colors.inputBorder,
               color: colors.text,
+              fontFamily,
             }]}
           />
 
           {/* Forgot Password (sign-in mode only) */}
           {!isSignUp && !resetSent && (
             <Pressable onPress={handleResetPassword} style={styles.forgotRow}>
-              <Text style={[styles.forgotText, { color: colors.accent }]}>Forgot password?</Text>
+              <Text style={[styles.forgotText, { color: colors.link, fontFamily }]}>Forgot password?</Text>
             </Pressable>
           )}
 
           {/* Reset email sent confirmation */}
           {resetSent && (
             <View style={[styles.resetBanner, { backgroundColor: colors.accent + '18' }]}>
-              <Text style={[styles.resetBannerText, { color: colors.accent }]}>
+              <Text style={[styles.resetBannerText, { color: colors.accent, fontFamily }]}>
                 Check your email for a password reset link.
               </Text>
             </View>
@@ -232,7 +234,7 @@ export default function LoginScreen() {
 
           {/* Error message */}
           {errorMsg ? (
-            <Text style={styles.errorText}>{errorMsg}</Text>
+            <Text style={[styles.errorText, { fontFamily }]}>{errorMsg}</Text>
           ) : null}
 
           <Pressable
@@ -243,15 +245,15 @@ export default function LoginScreen() {
               opacity: loading ? 0.7 : 1,
             }]}
           >
-            {loading && <ActivityIndicator color="#fff" size="small" style={{ marginRight: 8 }} />}
-            <Text style={styles.primaryBtnText}>{buttonLabel}</Text>
+            {loading && <ActivityIndicator color="#f7f7f7" size="small" style={{ marginRight: 8 }} />}
+            <Text style={[styles.primaryBtnText, { fontFamily }]}>{buttonLabel}</Text>
           </Pressable>
 
           <Pressable onPress={() => { setIsSignUp(!isSignUp); setErrorMsg(''); setResetSent(false); }} style={styles.toggleRow}>
-            <Text style={[styles.toggleText, { color: colors.textMuted }]}>
+            <Text style={[styles.toggleText, { color: colors.textMuted, fontFamily }]}>
               {isSignUp ? 'Already have an account?' : "Don't have an account?"}
               {' '}
-              <Text style={{ color: colors.accent, fontWeight: '600' }}>
+              <Text style={{ color: colors.link, fontWeight: '600' }}>
                 {isSignUp ? 'Sign In' : 'Sign Up'}
               </Text>
             </Text>
@@ -285,7 +287,7 @@ const styles = StyleSheet.create({
   },
   card: {
     borderWidth: 0.5,
-    borderRadius: 20,
+    borderRadius: 8,
     padding: 24,
   },
   socialBtn: {
@@ -296,7 +298,7 @@ const styles = StyleSheet.create({
   googleBtn: {
     flexDirection: 'row',
     height: 50,
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -322,7 +324,7 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
@@ -338,7 +340,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   resetBanner: {
-    borderRadius: 10,
+    borderRadius: 8,
     padding: 12,
     marginBottom: 8,
   },
@@ -348,7 +350,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   errorText: {
-    color: '#ef4444',
+    color: '#a10c0c',
     fontSize: 14,
     marginBottom: 8,
     textAlign: 'center',
@@ -356,13 +358,13 @@ const styles = StyleSheet.create({
   primaryBtn: {
     flexDirection: 'row',
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 4,
   },
   primaryBtnText: {
-    color: '#fff',
+    color: '#f7f7f7',
     fontWeight: '600',
     fontSize: 16,
     letterSpacing: 0.3,

@@ -82,7 +82,7 @@ function parsedToForm(parsed: ParsedCard): FormData {
 }
 
 export default function MyCardScreen() {
-  const { colors, fontSizes } = useTheme();
+  const { colors, fontSizes, fontFamily } = useTheme();
   const { user } = useAuth();
   const navigation = useNavigation();
 
@@ -359,13 +359,13 @@ export default function MyCardScreen() {
       return (
         <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border, ...cardShadow(colors.cardShadow) }]}>
           <View style={s.emptyArea}>
-            <View style={[s.iconCircle, { backgroundColor: colors.accent + '12' }]}>
+            <View style={[s.iconCircle, { backgroundColor: colors.accent + '30' }]}>
               <Ionicons name="person-add-outline" size={36} color={colors.accent} />
             </View>
-            <Text style={[s.emptyTitle, { color: colors.text, fontSize: fontSizes.lg }]}>
+            <Text style={[s.emptyTitle, { color: colors.text, fontSize: fontSizes.lg, fontFamily }]}>
               Create Your Card
             </Text>
-            <Text style={[s.emptySub, { color: colors.textMuted, fontSize: fontSizes.sm }]}>
+            <Text style={[s.emptySub, { color: colors.textMuted, fontSize: fontSizes.sm, fontFamily }]}>
               Add your business card to share with others
             </Text>
             <AnimatedPressable
@@ -373,7 +373,7 @@ export default function MyCardScreen() {
               onPress={() => navigate('choose-method')}
               style={[s.primaryBtn, { backgroundColor: colors.accent, marginTop: 20, alignSelf: 'stretch' }]}
             >
-              <Text style={[s.primaryBtnText, { fontSize: fontSizes.base }]}>Get Started</Text>
+              <Text style={[s.primaryBtnText, { fontSize: fontSizes.base, fontFamily }]}>Get Started</Text>
             </AnimatedPressable>
           </View>
         </View>
@@ -398,11 +398,11 @@ export default function MyCardScreen() {
                 </View>
               )}
               <View style={s.listCardInfo}>
-                <Text style={[s.listCardName, { color: colors.text, fontSize: fontSizes.base }]} numberOfLines={1}>
+                <Text style={[s.listCardName, { color: colors.text, fontSize: fontSizes.base, fontFamily }]} numberOfLines={1}>
                   {card.name || 'Untitled'}
                 </Text>
                 {card.company && (
-                  <Text style={[s.listCardCompany, { color: colors.textMuted, fontSize: fontSizes.sm }]} numberOfLines={1}>
+                  <Text style={[s.listCardCompany, { color: colors.textMuted, fontSize: fontSizes.sm, fontFamily }]} numberOfLines={1}>
                     {card.company}
                   </Text>
                 )}
@@ -418,8 +418,8 @@ export default function MyCardScreen() {
           style={[s.addBtn, { borderColor: colors.border }]}
         >
           <View style={s.actionBtnInner}>
-            <Ionicons name="add" size={20} color={colors.accent} />
-            <Text style={[s.addBtnText, { color: colors.accent, fontSize: fontSizes.base }]}>Add Another Card</Text>
+            <Ionicons name="add" size={20} color={colors.link} />
+            <Text style={[s.addBtnText, { color: colors.link, fontSize: fontSizes.base, fontFamily }]}>Add Another Card</Text>
           </View>
         </AnimatedPressable>
       </>
@@ -450,8 +450,8 @@ export default function MyCardScreen() {
       <>
         {cards.length > 1 && (
           <AnimatedPressable scaleDown={0.95} onPress={() => navigate('list')} style={s.backRow}>
-            <Ionicons name="chevron-back" size={20} color={colors.accent} />
-            <Text style={[s.backText, { color: colors.accent, fontSize: fontSizes.sm }]}>All Cards</Text>
+            <Ionicons name="chevron-back" size={20} color={colors.link} />
+            <Text style={[s.backText, { color: colors.link, fontSize: fontSizes.sm, fontFamily }]}>All Cards</Text>
           </AnimatedPressable>
         )}
 
@@ -460,11 +460,11 @@ export default function MyCardScreen() {
             <Image source={{ uri: card.card_image_url }} style={s.detailImage} resizeMode="contain" />
           )}
 
-          <Text style={[s.cardName, { color: colors.text, fontSize: fontSizes.xl }]}>
+          <Text style={[s.cardName, { color: colors.text, fontSize: fontSizes.xl, fontFamily }]}>
             {card.name}
           </Text>
           {card.company && (
-            <Text style={[s.cardCompany, { color: colors.textMuted, fontSize: fontSizes.base }]}>
+            <Text style={[s.cardCompany, { color: colors.textMuted, fontSize: fontSizes.base, fontFamily }]}>
               {card.company}
             </Text>
           )}
@@ -472,24 +472,24 @@ export default function MyCardScreen() {
           <View style={s.infoSection}>
             {infoFields.map((f, i) => f.value ? (
               <View key={`${f.label}-${i}`} style={s.infoRow}>
-                <Text style={[s.infoLabel, { color: colors.textMuted, fontSize: fontSizes.xs }]}>{f.label}</Text>
-                <Text style={[s.infoValue, { color: colors.text, fontSize: fontSizes.sm }]}>{f.value}</Text>
+                <Text style={[s.infoLabel, { color: colors.textMuted, fontSize: fontSizes.xs, fontFamily }]}>{f.label}</Text>
+                <Text style={[s.infoValue, { color: colors.link, fontSize: fontSizes.sm, fontFamily }]}>{f.value}</Text>
               </View>
             ) : null)}
 
             {socials.map(([platform, url]) => (
               <View key={platform} style={s.infoRow}>
-                <Text style={[s.infoLabel, { color: colors.textMuted, fontSize: fontSizes.xs }]}>
+                <Text style={[s.infoLabel, { color: colors.textMuted, fontSize: fontSizes.xs, fontFamily }]}>
                   {platform.charAt(0).toUpperCase() + platform.slice(1)}
                 </Text>
-                <Text style={[s.infoValue, { color: colors.text, fontSize: fontSizes.sm }]}>{url}</Text>
+                <Text style={[s.infoValue, { color: colors.link, fontSize: fontSizes.sm, fontFamily }]}>{url}</Text>
               </View>
             ))}
 
             {card.notes && (
               <View style={s.infoRow}>
-                <Text style={[s.infoLabel, { color: colors.textMuted, fontSize: fontSizes.xs }]}>Notes</Text>
-                <Text style={[s.infoValue, { color: colors.text, fontSize: fontSizes.sm }]}>{card.notes}</Text>
+                <Text style={[s.infoLabel, { color: colors.textMuted, fontSize: fontSizes.xs, fontFamily }]}>Notes</Text>
+                <Text style={[s.infoValue, { color: colors.text, fontSize: fontSizes.sm, fontFamily }]}>{card.notes}</Text>
               </View>
             )}
           </View>
@@ -497,7 +497,7 @@ export default function MyCardScreen() {
 
         {/* QR Code */}
         <View style={[s.card, s.qrCard, { backgroundColor: colors.bgCard, borderColor: colors.border, ...cardShadow(colors.cardShadow) }]}>
-          <Text style={[s.qrTitle, { color: colors.text, fontSize: fontSizes.base }]}>Scan to get my info</Text>
+          <Text style={[s.qrTitle, { color: colors.text, fontSize: fontSizes.base, fontFamily }]}>Scan to get my info</Text>
           <View style={s.qrWrapper}>
             <QRCode value={qrValue} size={200} backgroundColor="white" color="black" />
           </View>
@@ -508,8 +508,8 @@ export default function MyCardScreen() {
           <AnimatedPressable scaleDown={0.95} onPress={() => shareCard(card)}
             style={[s.actionBtn, { backgroundColor: colors.accent }]}>
             <View style={s.actionBtnInner}>
-              <Ionicons name="share-outline" size={18} color="#fff" />
-              <Text style={[s.actionBtnText, { fontSize: fontSizes.base }]}>Share</Text>
+              <Ionicons name="share-outline" size={18} color="#f7f7f7" />
+              <Text style={[s.actionBtnText, { fontSize: fontSizes.base, fontFamily }]}>Share</Text>
             </View>
           </AnimatedPressable>
           <AnimatedPressable scaleDown={0.95} onPress={() => {
@@ -521,7 +521,7 @@ export default function MyCardScreen() {
             style={[s.actionBtn, { backgroundColor: colors.border }]}>
             <View style={s.actionBtnInner}>
               <Ionicons name="create-outline" size={18} color={colors.text} />
-              <Text style={[s.actionBtnText, { color: colors.text, fontSize: fontSizes.base }]}>Edit</Text>
+              <Text style={[s.actionBtnText, { color: colors.text, fontSize: fontSizes.base, fontFamily }]}>Edit</Text>
             </View>
           </AnimatedPressable>
         </View>
@@ -532,16 +532,16 @@ export default function MyCardScreen() {
           style={[s.addBtn, { borderColor: colors.border }]}
         >
           <View style={s.actionBtnInner}>
-            <Ionicons name="add" size={20} color={colors.accent} />
-            <Text style={[s.addBtnText, { color: colors.accent, fontSize: fontSizes.base }]}>Add Another Card</Text>
+            <Ionicons name="add" size={20} color={colors.link} />
+            <Text style={[s.addBtnText, { color: colors.link, fontSize: fontSizes.base, fontFamily }]}>Add Another Card</Text>
           </View>
         </AnimatedPressable>
 
         <AnimatedPressable scaleDown={0.95} onPress={() => deleteCard(card)}
           style={[s.deleteBtn, { borderColor: colors.border }]}>
           <View style={s.actionBtnInner}>
-            <Ionicons name="trash-outline" size={16} color="#ef4444" />
-            <Text style={[s.deleteBtnText, { fontSize: fontSizes.sm }]}>Delete Card</Text>
+            <Ionicons name="trash-outline" size={16} color="#a10c0c" />
+            <Text style={[s.deleteBtnText, { fontSize: fontSizes.sm, fontFamily }]}>Delete Card</Text>
           </View>
         </AnimatedPressable>
       </>
@@ -553,8 +553,8 @@ export default function MyCardScreen() {
   const renderChooseMethod = () => (
     <>
       <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border, ...cardShadow(colors.cardShadow) }]}>
-        <Text style={[s.title, { color: colors.text, fontSize: fontSizes.lg }]}>New Card</Text>
-        <Text style={[s.subtitle, { color: colors.textMuted, fontSize: fontSizes.sm }]}>
+        <Text style={[s.title, { color: colors.text, fontSize: fontSizes.lg, fontFamily }]}>New Card</Text>
+        <Text style={[s.subtitle, { color: colors.textMuted, fontSize: fontSizes.sm, fontFamily }]}>
           How would you like to create your card?
         </Text>
 
@@ -570,11 +570,15 @@ export default function MyCardScreen() {
           }}
           style={[s.methodCard, { borderColor: colors.border }]}
         >
-          <Ionicons name="camera-outline" size={32} color={colors.accent} />
-          <Text style={[s.methodTitle, { color: colors.text, fontSize: fontSizes.base }]}>Scan Your Card</Text>
-          <Text style={[s.methodSub, { color: colors.textMuted, fontSize: fontSizes.xs }]}>
-            Take a photo or choose from gallery
-          </Text>
+          <View style={s.methodCardInner}>
+            <View style={[s.iconCircle, { backgroundColor: colors.accent + '30' }]}>
+              <Ionicons name="camera-outline" size={36} color={colors.accent} />
+            </View>
+            <Text style={[s.methodTitle, { color: colors.text, fontSize: fontSizes.base, fontFamily }]}>Scan Your Card</Text>
+            <Text style={[s.methodSub, { color: colors.textMuted, fontSize: fontSizes.xs, fontFamily }]}>
+              Take a photo or choose from gallery
+            </Text>
+          </View>
         </AnimatedPressable>
 
         <AnimatedPressable
@@ -585,17 +589,21 @@ export default function MyCardScreen() {
           }}
           style={[s.methodCard, { borderColor: colors.border }]}
         >
-          <Ionicons name="create-outline" size={32} color={colors.accent} />
-          <Text style={[s.methodTitle, { color: colors.text, fontSize: fontSizes.base }]}>Enter Manually</Text>
-          <Text style={[s.methodSub, { color: colors.textMuted, fontSize: fontSizes.xs }]}>
-            Type in your card details
-          </Text>
+          <View style={s.methodCardInner}>
+            <View style={[s.iconCircle, { backgroundColor: colors.accent + '30' }]}>
+              <Ionicons name="create-outline" size={36} color={colors.accent} />
+            </View>
+            <Text style={[s.methodTitle, { color: colors.text, fontSize: fontSizes.base, fontFamily }]}>Enter Manually</Text>
+            <Text style={[s.methodSub, { color: colors.textMuted, fontSize: fontSizes.xs, fontFamily }]}>
+              Type in your card details
+            </Text>
+          </View>
         </AnimatedPressable>
       </View>
 
       <AnimatedPressable scaleDown={0.95} onPress={goBack}
         style={[s.secondaryBtn, { backgroundColor: colors.border }]}>
-        <Text style={[s.secondaryBtnText, { color: colors.text, fontSize: fontSizes.base }]}>Cancel</Text>
+        <Text style={[s.secondaryBtnText, { color: colors.text, fontSize: fontSizes.base, fontFamily }]}>Cancel</Text>
       </AnimatedPressable>
     </>
   );
@@ -607,31 +615,31 @@ export default function MyCardScreen() {
       {isProcessing ? (
         <>
           <ActivityIndicator size="large" color={colors.accent} />
-          <Text style={[s.emptyTitle, { color: colors.text, marginTop: 16, fontSize: fontSizes.lg }]}>
+          <Text style={[s.emptyTitle, { color: colors.text, marginTop: 16, fontSize: fontSizes.lg, fontFamily }]}>
             Analyzing card...
           </Text>
-          <Text style={[s.emptySub, { color: colors.textMuted, fontSize: fontSizes.sm }]}>
+          <Text style={[s.emptySub, { color: colors.textMuted, fontSize: fontSizes.sm, fontFamily }]}>
             Extracting contact information
           </Text>
         </>
       ) : (
         <>
-          <Text style={[s.emptyTitle, { color: colors.text, fontSize: fontSizes.lg }]}>
+          <Text style={[s.emptyTitle, { color: colors.text, fontSize: fontSizes.lg, fontFamily }]}>
             Ready to scan
           </Text>
           <View style={[s.row, { marginTop: 16, gap: 12 }]}>
             <AnimatedPressable scaleDown={0.95} onPress={() => pickImage(true)}
               style={[s.primaryBtn, { flex: 1, backgroundColor: colors.accent }]}>
-              <Text style={[s.primaryBtnText, { fontSize: fontSizes.base }]}>Camera</Text>
+              <Text style={[s.primaryBtnText, { fontSize: fontSizes.base, fontFamily }]}>Camera</Text>
             </AnimatedPressable>
             <AnimatedPressable scaleDown={0.95} onPress={() => pickImage(false)}
               style={[s.secondaryBtn, { flex: 1, backgroundColor: colors.border }]}>
-              <Text style={[s.secondaryBtnText, { color: colors.text, fontSize: fontSizes.base }]}>Gallery</Text>
+              <Text style={[s.secondaryBtnText, { color: colors.text, fontSize: fontSizes.base, fontFamily }]}>Gallery</Text>
             </AnimatedPressable>
           </View>
           <AnimatedPressable scaleDown={0.95} onPress={() => navigate('choose-method')}
             style={{ marginTop: 16 }}>
-            <Text style={[{ color: colors.accent, fontSize: fontSizes.sm, fontWeight: '600' }]}>Back</Text>
+            <Text style={[{ color: colors.link, fontSize: fontSizes.sm, fontWeight: '600', fontFamily }]}>Back</Text>
           </AnimatedPressable>
         </>
       )}
@@ -645,10 +653,10 @@ export default function MyCardScreen() {
 
     return (
       <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border, ...cardShadow(colors.cardShadow) }]}>
-        <Text style={[s.title, { color: colors.text, fontSize: fontSizes.lg }]}>
+        <Text style={[s.title, { color: colors.text, fontSize: fontSizes.lg, fontFamily }]}>
           {isEditing ? 'Edit Card' : 'New Card'}
         </Text>
-        <Text style={[s.subtitle, { color: colors.textMuted, fontSize: fontSizes.sm }]}>
+        <Text style={[s.subtitle, { color: colors.textMuted, fontSize: fontSizes.sm, fontFamily }]}>
           {isEditing ? 'Update your card details' : 'Fill in your card details'}
         </Text>
 
@@ -674,14 +682,14 @@ export default function MyCardScreen() {
                 { text: 'Cancel', style: 'cancel' },
               ]);
             }} style={[s.addThumbBtn, { borderColor: colors.border }]}>
-              <Text style={[s.addThumbPlus, { color: colors.textMuted }]}>+</Text>
+              <Text style={[s.addThumbPlus, { color: colors.textMuted, fontFamily }]}>+</Text>
             </Pressable>
           </ScrollView>
         )}
 
         {FIELDS.map(({ key, label, placeholder, multiline }) => (
           <View key={key} style={s.field}>
-            <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.xs }]}>{label}</Text>
+            <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.xs, fontFamily }]}>{label}</Text>
             <TextInput
               value={form[key]}
               onChangeText={text => updateField(key, text)}
@@ -693,6 +701,7 @@ export default function MyCardScreen() {
                 borderColor: form[key].trim() ? colors.accent + '55' : colors.inputBorder,
                 color: colors.text,
                 fontSize: fontSizes.base,
+                fontFamily,
               }, multiline && s.inputMultiline]}
             />
           </View>
@@ -707,7 +716,7 @@ export default function MyCardScreen() {
             opacity: saving ? 0.7 : 1,
           }]}
         >
-          <Text style={[s.primaryBtnText, { fontSize: fontSizes.base }]}>
+          <Text style={[s.primaryBtnText, { fontSize: fontSizes.base, fontFamily }]}>
             {saving ? 'Saving...' : 'Save Card'}
           </Text>
         </AnimatedPressable>
@@ -717,7 +726,7 @@ export default function MyCardScreen() {
           goBack();
         }}
           style={[s.secondaryBtn, { backgroundColor: colors.border }]}>
-          <Text style={[s.secondaryBtnText, { color: colors.text, fontSize: fontSizes.base }]}>Cancel</Text>
+          <Text style={[s.secondaryBtnText, { color: colors.text, fontSize: fontSizes.base, fontFamily }]}>Cancel</Text>
         </AnimatedPressable>
       </View>
     );
@@ -748,7 +757,7 @@ const s = StyleSheet.create({
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   card: {
     borderWidth: 0.5,
-    borderRadius: 16,
+    borderRadius: 8,
     padding: 20,
     marginBottom: 12,
   },
@@ -772,7 +781,7 @@ const s = StyleSheet.create({
   // List
   listCard: {
     borderWidth: 0.5,
-    borderRadius: 16,
+    borderRadius: 8,
     padding: 16,
     marginBottom: 10,
   },
@@ -783,13 +792,13 @@ const s = StyleSheet.create({
   listThumb: {
     width: 48,
     height: 48,
-    borderRadius: 12,
+    borderRadius: 8,
     marginRight: 14,
   },
   listThumbPlaceholder: {
     width: 48,
     height: 48,
-    borderRadius: 12,
+    borderRadius: 8,
     marginRight: 14,
     justifyContent: 'center',
     alignItems: 'center',
@@ -801,7 +810,7 @@ const s = StyleSheet.create({
   listCardCompany: { marginTop: 2 },
   addBtn: {
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
     borderStyle: 'dashed',
     marginTop: 4,
@@ -821,7 +830,7 @@ const s = StyleSheet.create({
   detailImage: {
     width: '100%',
     height: 180,
-    borderRadius: 12,
+    borderRadius: 8,
     marginBottom: 16,
   },
   infoSection: { marginTop: 16 },
@@ -833,7 +842,7 @@ const s = StyleSheet.create({
   qrWrapper: {
     padding: 16,
     backgroundColor: 'white',
-    borderRadius: 12,
+    borderRadius: 8,
   },
   actions: {
     flexDirection: 'row',
@@ -843,7 +852,7 @@ const s = StyleSheet.create({
   actionBtn: {
     flex: 1,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 8,
     alignItems: 'center',
   },
   actionBtnInner: {
@@ -851,33 +860,36 @@ const s = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  actionBtnText: { color: '#fff', fontWeight: '600' },
+  actionBtnText: { color: '#f7f7f7', fontWeight: '600' },
   deleteBtn: {
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center',
     marginBottom: 12,
   },
-  deleteBtnText: { color: '#ef4444', fontWeight: '600' },
+  deleteBtnText: { color: '#a10c0c', fontWeight: '600' },
 
   // Choose method
   methodCard: {
-    alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 14,
-    padding: 20,
+    borderRadius: 8,
     marginBottom: 10,
   },
-  methodTitle: { fontWeight: '600', marginTop: 8 },
-  methodSub: { marginTop: 2 },
+  methodCardInner: {
+    alignItems: 'center',
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+  },
+  methodTitle: { fontWeight: '600', marginTop: 4, marginBottom: 4 },
+  methodSub: { textAlign: 'center' },
 
   // Form
   field: { marginBottom: 14 },
   label: { fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.2, marginBottom: 6 },
   input: {
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
@@ -903,7 +915,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  coverBadgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
+  coverBadgeText: { color: '#f7f7f7', fontSize: 10, fontWeight: '700' },
   addThumbBtn: {
     width: 56,
     height: 56,
@@ -918,14 +930,14 @@ const s = StyleSheet.create({
   // Buttons
   primaryBtn: {
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 8,
     alignItems: 'center',
     marginTop: 20,
   },
-  primaryBtnText: { color: '#fff', fontWeight: '600', letterSpacing: 0.3 },
+  primaryBtnText: { color: '#f7f7f7', fontWeight: '600', letterSpacing: 0.3 },
   secondaryBtn: {
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 8,
     alignItems: 'center',
     marginTop: 10,
   },

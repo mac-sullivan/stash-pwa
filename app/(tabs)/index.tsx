@@ -49,7 +49,7 @@ function FadeInView({ children, visible }: { children: React.ReactNode; visible:
 }
 
 export default function ScanScreen() {
-  const { colors, fontSizes } = useTheme();
+  const { colors, fontSizes, fontFamily } = useTheme();
   const { user } = useAuth();
   const [mode, setMode] = useState<ScanMode>('card');
   const [images, setImages] = useState<string[]>([]);
@@ -279,7 +279,7 @@ export default function ScanScreen() {
 
     return (
       <View style={s.section}>
-        <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.xs }]}>Categories</Text>
+        <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.xs, fontFamily }]}>Categories</Text>
         <View style={s.chipRow}>
           {PRESET_CATEGORIES.map(cat => (
             <AnimatedPressable
@@ -291,8 +291,9 @@ export default function ScanScreen() {
               }]}
             >
               <Text style={[s.chipText, {
-                color: selectedCategories.includes(cat) ? '#fff' : colors.textMuted,
+                color: selectedCategories.includes(cat) ? '#f7f7f7' : colors.textMuted,
                 fontSize: fontSizes.xs,
+                fontFamily,
               }]}>{cat}</Text>
             </AnimatedPressable>
           ))}
@@ -305,8 +306,9 @@ export default function ScanScreen() {
                   backgroundColor: selectedCategories.includes(cat) ? colors.accent : colors.border,
                 }]}>
                 <Text style={[s.chipText, {
-                  color: selectedCategories.includes(cat) ? '#fff' : colors.textMuted,
+                  color: selectedCategories.includes(cat) ? '#f7f7f7' : colors.textMuted,
                   fontSize: fontSizes.xs,
+                  fontFamily,
                 }]}>{cat}</Text>
               </AnimatedPressable>
             ))}
@@ -325,11 +327,12 @@ export default function ScanScreen() {
               borderColor: colors.inputBorder,
               color: colors.text,
               fontSize: fontSizes.sm,
+              fontFamily,
             }]}
           />
           <AnimatedPressable onPress={addCustomCategory} scaleDown={0.92}
             style={[s.smallBtn, { backgroundColor: colors.border }]}>
-            <Text style={[s.smallBtnText, { color: colors.text, fontSize: fontSizes.xs }]}>Add</Text>
+            <Text style={[s.smallBtnText, { color: colors.text, fontSize: fontSizes.xs, fontFamily }]}>Add</Text>
           </AnimatedPressable>
         </View>
       </View>
@@ -357,15 +360,15 @@ export default function ScanScreen() {
 
     return (
       <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border, ...cardShadow(colors.cardShadow) }]}>
-        <Text style={[s.cardTitle, { color: colors.text, fontSize: fontSizes.lg }]}>Extracted Information</Text>
-        <Text style={[s.editHint, { color: colors.textMuted, fontSize: fontSizes.xs }]}>Tap any field to edit before saving</Text>
+        <Text style={[s.cardTitle, { color: colors.text, fontSize: fontSizes.lg, fontFamily }]}>Extracted Information</Text>
+        <Text style={[s.editHint, { color: colors.textMuted, fontSize: fontSizes.xs, fontFamily }]}>Tap any field to edit before saving</Text>
 
         {fields.map(({ key, label }) => {
           const value = parsedData[key];
           if (typeof value === 'object') return null;
           return (
             <View key={key} style={s.field}>
-              <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.xs }]}>{label}</Text>
+              <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.xs, fontFamily }]}>{label}</Text>
               <TextInput
                 value={value || ''}
                 onChangeText={text => updateParsedField(key, text)}
@@ -377,6 +380,7 @@ export default function ScanScreen() {
                   borderColor: (value || '').trim() ? colors.accent + '55' : colors.inputBorder,
                   color: colors.text,
                   fontSize: fontSizes.base,
+                  fontFamily,
                 }, (key === 'address' || key === 'notes') && s.inputMultiline]}
               />
             </View>
@@ -394,7 +398,7 @@ export default function ScanScreen() {
             opacity: isSaving ? 0.7 : 1,
           }]}
         >
-          <Text style={[s.primaryBtnText, { fontSize: fontSizes.base }]}>{isSaving ? 'Saving...' : 'Save to Stash'}</Text>
+          <Text style={[s.primaryBtnText, { fontSize: fontSizes.base, fontFamily }]}>{isSaving ? 'Saving...' : 'Save to Stash'}</Text>
         </AnimatedPressable>
       </View>
     );
@@ -409,7 +413,7 @@ export default function ScanScreen() {
           onPress={() => switchMode('card')}
           style={[s.modeBtn, { backgroundColor: mode === 'card' ? colors.accent : colors.bgCard }]}
         >
-          <Text style={[s.modeBtnText, { color: mode === 'card' ? '#fff' : colors.textMuted, fontSize: fontSizes.sm }]}>
+          <Text style={[s.modeBtnText, { color: mode === 'card' ? '#f7f7f7' : colors.textMuted, fontSize: fontSizes.sm, fontFamily }]}>
             Scan Card
           </Text>
         </AnimatedPressable>
@@ -418,7 +422,7 @@ export default function ScanScreen() {
           onPress={() => switchMode('qr')}
           style={[s.modeBtn, { backgroundColor: mode === 'qr' ? colors.accent : colors.bgCard }]}
         >
-          <Text style={[s.modeBtnText, { color: mode === 'qr' ? '#fff' : colors.textMuted, fontSize: fontSizes.sm }]}>
+          <Text style={[s.modeBtnText, { color: mode === 'qr' ? '#f7f7f7' : colors.textMuted, fontSize: fontSizes.sm, fontFamily }]}>
             QR Code
           </Text>
         </AnimatedPressable>
@@ -452,32 +456,32 @@ export default function ScanScreen() {
                     { text: 'Cancel', style: 'cancel' },
                   ]);
                 }} style={[s.addThumbBtn, { borderColor: colors.border }]}>
-                  <Text style={[s.addThumbPlus, { color: colors.textMuted }]}>+</Text>
+                  <Text style={[s.addThumbPlus, { color: colors.textMuted, fontFamily }]}>+</Text>
                 </Pressable>
               </ScrollView>
               <View style={[s.row, { marginTop: 12, gap: 12 }]}>
                 <AnimatedPressable scaleDown={0.95} onPress={resetAll}
                   style={[s.secondaryBtn, { flex: 1, backgroundColor: colors.border }]}>
-                  <Text style={[s.secondaryBtnText, { color: colors.text, fontSize: fontSizes.base }]}>Start Over</Text>
+                  <Text style={[s.secondaryBtnText, { color: colors.text, fontSize: fontSizes.base, fontFamily }]}>Start Over</Text>
                 </AnimatedPressable>
               </View>
             </>
           ) : (
             <View style={s.uploadArea}>
-              <View style={[s.iconCircle, { backgroundColor: colors.accent + '12' }]}>
+              <View style={[s.iconCircle, { backgroundColor: colors.accent + '30' }]}>
                 <Ionicons name="camera-outline" size={36} color={colors.accent} />
               </View>
-              <Text style={[s.uploadTitle, { color: colors.text, fontSize: fontSizes.lg }]}>Scan Business Card</Text>
-              <Text style={[s.uploadSub, { color: colors.textMuted, fontSize: fontSizes.sm, lineHeight: 20 }]}>Take a photo or choose from gallery</Text>
+              <Text style={[s.uploadTitle, { color: colors.text, fontSize: fontSizes.lg, fontFamily }]}>Scan Business Card</Text>
+              <Text style={[s.uploadSub, { color: colors.textMuted, fontSize: fontSizes.sm, lineHeight: 20, fontFamily }]}>Take a photo or choose from gallery</Text>
               <View style={[s.row, { marginTop: 16 }]}>
                 <AnimatedPressable scaleDown={0.95} onPress={() => pickImage(true)}
                   style={[s.primaryBtn, { flex: 1, marginTop: 0, backgroundColor: colors.accent }]}>
-                  <Text style={[s.primaryBtnText, { fontSize: fontSizes.base }]}>Camera</Text>
+                  <Text style={[s.primaryBtnText, { fontSize: fontSizes.base, fontFamily }]}>Camera</Text>
                 </AnimatedPressable>
                 <View style={{ width: 12 }} />
                 <AnimatedPressable scaleDown={0.95} onPress={() => pickImage(false)}
                   style={[s.secondaryBtn, { flex: 1, backgroundColor: colors.border }]}>
-                  <Text style={[s.secondaryBtnText, { color: colors.text, fontSize: fontSizes.base }]}>Gallery</Text>
+                  <Text style={[s.secondaryBtnText, { color: colors.text, fontSize: fontSizes.base, fontFamily }]}>Gallery</Text>
                 </AnimatedPressable>
               </View>
             </View>
@@ -497,25 +501,25 @@ export default function ScanScreen() {
               />
               <AnimatedPressable scaleDown={0.95} onPress={() => setCameraActive(false)}
                 style={[s.secondaryBtn, { backgroundColor: colors.border, margin: 12 }]}>
-                <Text style={[s.secondaryBtnText, { color: colors.text, fontSize: fontSizes.base }]}>Stop Camera</Text>
+                <Text style={[s.secondaryBtnText, { color: colors.text, fontSize: fontSizes.base, fontFamily }]}>Stop Camera</Text>
               </AnimatedPressable>
             </>
           ) : (
             <View style={s.uploadArea}>
-              <View style={[s.iconCircle, { backgroundColor: colors.accent + '12' }]}>
+              <View style={[s.iconCircle, { backgroundColor: colors.accent + '30' }]}>
                 <Ionicons name="qr-code-outline" size={36} color={colors.accent} />
               </View>
-              <Text style={[s.uploadTitle, { color: colors.text, fontSize: fontSizes.lg }]}>Scan QR Code</Text>
-              <Text style={[s.uploadSub, { color: colors.textMuted, fontSize: fontSizes.sm, lineHeight: 20 }]}>Point camera at a QR code</Text>
+              <Text style={[s.uploadTitle, { color: colors.text, fontSize: fontSizes.lg, fontFamily }]}>Scan QR Code</Text>
+              <Text style={[s.uploadSub, { color: colors.textMuted, fontSize: fontSizes.sm, lineHeight: 20, fontFamily }]}>Point camera at a QR code</Text>
               <View style={[s.row, { marginTop: 16 }]}>
                 <AnimatedPressable scaleDown={0.95} onPress={startQrCamera}
                   style={[s.primaryBtn, { flex: 1, marginTop: 0, backgroundColor: colors.accent }]}>
-                  <Text style={[s.primaryBtnText, { fontSize: fontSizes.base }]}>Open Camera</Text>
+                  <Text style={[s.primaryBtnText, { fontSize: fontSizes.base, fontFamily }]}>Open Camera</Text>
                 </AnimatedPressable>
                 <View style={{ width: 12 }} />
                 <AnimatedPressable scaleDown={0.95} onPress={() => pickImage(false)}
                   style={[s.secondaryBtn, { flex: 1, backgroundColor: colors.border }]}>
-                  <Text style={[s.secondaryBtnText, { color: colors.text, fontSize: fontSizes.base }]}>Upload</Text>
+                  <Text style={[s.secondaryBtnText, { color: colors.text, fontSize: fontSizes.base, fontFamily }]}>Upload</Text>
                 </AnimatedPressable>
               </View>
             </View>
@@ -527,10 +531,10 @@ export default function ScanScreen() {
       {isProcessing && (
         <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border, alignItems: 'center', padding: 40, ...cardShadow(colors.cardShadow) }]}>
           <ActivityIndicator size="large" color={colors.accent} />
-          <Text style={[s.uploadTitle, { color: colors.text, marginTop: 16, fontSize: fontSizes.lg }]}>
+          <Text style={[s.uploadTitle, { color: colors.text, marginTop: 16, fontSize: fontSizes.lg, fontFamily }]}>
             {mode === 'card' ? 'Analyzing card...' : 'Processing QR data...'}
           </Text>
-          <Text style={[s.uploadSub, { color: colors.textMuted, fontSize: fontSizes.sm }]}>Extracting contact information</Text>
+          <Text style={[s.uploadSub, { color: colors.textMuted, fontSize: fontSizes.sm, fontFamily }]}>Extracting contact information</Text>
         </View>
       )}
 
@@ -539,7 +543,7 @@ export default function ScanScreen() {
         {renderParsedData()}
         <AnimatedPressable scaleDown={0.95} onPress={resetAll}
           style={[s.secondaryBtn, { backgroundColor: colors.border, marginTop: 8 }]}>
-          <Text style={[s.secondaryBtnText, { color: colors.text, fontSize: fontSizes.base }]}>Scan Another</Text>
+          <Text style={[s.secondaryBtnText, { color: colors.text, fontSize: fontSizes.base, fontFamily }]}>Scan Another</Text>
         </AnimatedPressable>
       </FadeInView>
     </ScrollView>
@@ -552,7 +556,7 @@ const s = StyleSheet.create({
   modeToggle: {
     flexDirection: 'row',
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: 8,
     overflow: 'hidden',
     marginBottom: 16,
   },
@@ -566,7 +570,7 @@ const s = StyleSheet.create({
   },
   card: {
     borderWidth: 0.5,
-    borderRadius: 16,
+    borderRadius: 8,
     padding: 20,
     marginBottom: 12,
   },
@@ -594,7 +598,7 @@ const s = StyleSheet.create({
   previewImage: {
     width: '100%',
     height: 220,
-    borderRadius: 12,
+    borderRadius: 8,
     marginBottom: 12,
   },
   thumbStrip: {
@@ -618,7 +622,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   coverBadgeText: {
-    color: '#fff',
+    color: '#f7f7f7',
     fontSize: 10,
     fontWeight: '700',
   },
@@ -653,7 +657,7 @@ const s = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
   input: {
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
@@ -664,24 +668,24 @@ const s = StyleSheet.create({
   smallBtn: {
     paddingHorizontal: 14,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 8,
     marginLeft: 8,
   },
   smallBtnText: { fontWeight: '600' },
   primaryBtn: {
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 8,
     alignItems: 'center',
     marginTop: 16,
   },
   primaryBtnText: {
-    color: '#fff',
+    color: '#f7f7f7',
     fontWeight: '600',
     letterSpacing: 0.3,
   },
   secondaryBtn: {
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 8,
     alignItems: 'center',
   },
   secondaryBtnText: {

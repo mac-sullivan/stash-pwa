@@ -55,6 +55,7 @@ function RootLayoutInner() {
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     'PlayfairDisplay-Bold': require('../assets/fonts/PlayfairDisplay-Bold.ttf'),
+    'SpaceMono-Regular': require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
   useEffect(() => {

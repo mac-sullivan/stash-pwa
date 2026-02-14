@@ -4,13 +4,19 @@ import { View, Text, Pressable, Modal, StyleSheet, Alert, Animated } from 'react
 import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
-import { type FontSizeName } from '@/lib/constants';
+import { type FontSizeName, type FontStyleName } from '@/lib/constants';
 import AnimatedPressable from '@/components/AnimatedPressable';
 
 const FONT_SIZE_OPTIONS: { name: FontSizeName; label: string }[] = [
   { name: 'small', label: 'Small' },
   { name: 'medium', label: 'Medium' },
   { name: 'large', label: 'Large' },
+];
+
+const FONT_STYLE_OPTIONS: { name: FontStyleName; label: string }[] = [
+  { name: 'sans-serif', label: 'Sans-serif' },
+  { name: 'serif', label: 'Serif' },
+  { name: 'retro', label: 'Retro' },
 ];
 
 function ThemeToggle() {
@@ -25,7 +31,7 @@ function ThemeToggle() {
 }
 
 function SettingsButton() {
-  const { colors, fontSize, setFontSize, fontSizes } = useTheme();
+  const { colors, fontSize, setFontSize, fontSizes, fontStyle, setFontStyle, fontFamily } = useTheme();
   const { user, signOut } = useAuth();
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -128,16 +134,16 @@ function SettingsButton() {
           >
             <View style={[styles.handle, { backgroundColor: colors.border }]} />
 
-            <Text style={[styles.sheetTitle, { color: colors.text, fontSize: fontSizes.xl }]}>Settings</Text>
+            <Text style={[styles.sheetTitle, { color: colors.text, fontSize: fontSizes.xl, fontFamily }]}>Settings</Text>
 
             {/* Account section */}
-            <Text style={[styles.sectionLabel, { color: colors.textMuted, fontSize: fontSizes.sm }]}>Account</Text>
-            <Text style={[styles.emailText, { color: colors.text, fontSize: fontSizes.sm }]}>
+            <Text style={[styles.sectionLabel, { color: colors.textMuted, fontSize: fontSizes.sm, fontFamily }]}>Account</Text>
+            <Text style={[styles.emailText, { color: colors.text, fontSize: fontSizes.sm, fontFamily }]}>
               {user?.email ?? 'Not signed in'}
             </Text>
 
             {/* Font Size section */}
-            <Text style={[styles.sectionLabel, { color: colors.textMuted, fontSize: fontSizes.sm, marginTop: 20 }]}>Font Size</Text>
+            <Text style={[styles.sectionLabel, { color: colors.textMuted, fontSize: fontSizes.sm, marginTop: 20, fontFamily }]}>Font Size</Text>
             <View style={styles.fontSizeRow}>
               {FONT_SIZE_OPTIONS.map(opt => (
                 <AnimatedPressable
@@ -150,8 +156,33 @@ function SettingsButton() {
                   }]}
                 >
                   <Text style={[styles.fontSizeBtnText, {
-                    color: fontSize === opt.name ? '#fff' : colors.text,
+                    color: fontSize === opt.name ? '#f7f7f7' : colors.text,
                     fontSize: fontSizes.sm,
+                    fontFamily,
+                  }]}>
+                    {opt.label}
+                  </Text>
+                </AnimatedPressable>
+              ))}
+            </View>
+
+            {/* Font Style section */}
+            <Text style={[styles.sectionLabel, { color: colors.textMuted, fontSize: fontSizes.sm, marginTop: 20, fontFamily }]}>Font Style</Text>
+            <View style={styles.fontSizeRow}>
+              {FONT_STYLE_OPTIONS.map(opt => (
+                <AnimatedPressable
+                  key={opt.name}
+                  scaleDown={0.9}
+                  onPress={() => setFontStyle(opt.name)}
+                  style={[styles.fontSizeBtn, {
+                    backgroundColor: fontStyle === opt.name ? colors.accent : 'transparent',
+                    borderColor: fontStyle === opt.name ? colors.accent : colors.border,
+                  }]}
+                >
+                  <Text style={[styles.fontSizeBtnText, {
+                    color: fontStyle === opt.name ? '#f7f7f7' : colors.text,
+                    fontSize: fontSizes.sm,
+                    fontFamily,
                   }]}>
                     {opt.label}
                   </Text>
@@ -166,8 +197,8 @@ function SettingsButton() {
               style={[styles.signOutBtn, { borderColor: colors.border }]}
             >
               <View style={styles.signOutRow}>
-                <Ionicons name="log-out-outline" size={fontSizes.base} color="#ef4444" style={{ marginRight: 6 }} />
-                <Text style={[styles.signOutText, { fontSize: fontSizes.base }]}>Sign Out</Text>
+                <Ionicons name="log-out-outline" size={fontSizes.base} color="#a10c0c" style={{ marginRight: 6 }} />
+                <Text style={[styles.signOutText, { fontSize: fontSizes.base, fontFamily }]}>Sign Out</Text>
               </View>
             </AnimatedPressable>
 
@@ -176,7 +207,7 @@ function SettingsButton() {
               onPress={close}
               style={[styles.doneBtn, { backgroundColor: colors.accent }]}
             >
-              <Text style={[styles.doneBtnText, { fontSize: fontSizes.base }]}>Done</Text>
+              <Text style={[styles.doneBtnText, { fontSize: fontSizes.base, fontFamily }]}>Done</Text>
             </AnimatedPressable>
           </Animated.View>
         </View>
@@ -211,7 +242,7 @@ export default function TabLayout() {
           borderTopColor: colors.border,
           borderTopWidth: 0.5,
         },
-        tabBarActiveTintColor: colors.accent,
+        tabBarActiveTintColor: colors.link,
         tabBarInactiveTintColor: colors.textMuted,
         headerLeft: () => <SettingsButton />,
         headerRight: () => <ThemeToggle />,
@@ -309,7 +340,7 @@ const styles = StyleSheet.create({
   fontSizeBtn: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center',
   },
@@ -318,7 +349,7 @@ const styles = StyleSheet.create({
   },
   signOutBtn: {
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
     marginTop: 24,
   },
@@ -328,17 +359,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   signOutText: {
-    color: '#ef4444',
+    color: '#a10c0c',
     fontWeight: '600',
   },
   doneBtn: {
     marginTop: 12,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 8,
     alignItems: 'center',
   },
   doneBtnText: {
-    color: '#fff',
+    color: '#f7f7f7',
     fontWeight: '600',
   },
 });

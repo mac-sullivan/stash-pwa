@@ -39,17 +39,17 @@ export default function ImageLightbox({ images, initialIndex = 0, visible, onClo
 
         {/* Close button */}
         <AnimatedPressable style={s.closeBtn} onPress={onClose} scaleDown={0.85} hitSlop={12}>
-          <Ionicons name="close" size={28} color="#fff" />
+          <Ionicons name="close" size={28} color="#f7f7f7" />
         </AnimatedPressable>
 
         {/* Navigation arrows */}
         {hasMultiple && (
           <>
             <AnimatedPressable style={[s.arrowBtn, s.arrowLeft]} onPress={goPrev} scaleDown={0.85} hitSlop={8}>
-              <Ionicons name="chevron-back" size={32} color="#fff" />
+              <Ionicons name="chevron-back" size={32} color="#f7f7f7" />
             </AnimatedPressable>
             <AnimatedPressable style={[s.arrowBtn, s.arrowRight]} onPress={goNext} scaleDown={0.85} hitSlop={8}>
-              <Ionicons name="chevron-forward" size={32} color="#fff" />
+              <Ionicons name="chevron-forward" size={32} color="#f7f7f7" />
             </AnimatedPressable>
           </>
         )}
@@ -114,7 +114,7 @@ const s = StyleSheet.create({
     borderRadius: 16,
   },
   indicatorText: {
-    color: '#fff',
+    color: '#f7f7f7',
     fontSize: 15,
     fontWeight: '600',
   },
