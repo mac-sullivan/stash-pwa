@@ -43,6 +43,12 @@ next-env.d.ts
 # expo
 .expo/
 
+# apple keys and misc
+AuthKey_*.p8
+generate-apple-jwt.js
+Google
+Providers
+
 # claude code
 .claude/
 
