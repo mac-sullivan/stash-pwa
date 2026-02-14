@@ -14,7 +14,7 @@ import { useTheme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { parseCardImage } from '@/lib/api';
-import { formatCardText } from '@/lib/sharing';
+import { formatCardText, shareAsContact } from '@/lib/sharing';
 import type { MyCard, ParsedCard } from '@/lib/types';
 import { cardShadow } from '@/lib/constants';
 import AnimatedPressable from '@/components/AnimatedPressable';
@@ -508,26 +508,44 @@ export default function MyCardScreen() {
         </View>
 
         {/* Actions */}
-        <View style={s.actions}>
-          <AnimatedPressable scaleDown={0.95} onPress={() => shareCard(card)}
-            style={[s.actionBtn, { backgroundColor: colors.accent }]}>
-            <View style={s.actionBtnInner}>
-              <Ionicons name="share-outline" size={18} color="#f7f7f7" />
-              <Text style={[s.actionBtnText, { fontSize: fontSizes.base, fontFamily }]}>Share</Text>
-            </View>
-          </AnimatedPressable>
-          <AnimatedPressable scaleDown={0.95} onPress={() => {
-            setForm(cardToForm(card));
-            setImages(card.card_images || []);
-            setCoverIndex(0);
-            navigate('form');
-          }}
-            style={[s.actionBtn, { backgroundColor: colors.border }]}>
-            <View style={s.actionBtnInner}>
-              <Ionicons name="create-outline" size={18} color={colors.text} />
-              <Text style={[s.actionBtnText, { color: colors.text, fontSize: fontSizes.base, fontFamily }]}>Edit</Text>
-            </View>
-          </AnimatedPressable>
+        <View style={s.actionGrid}>
+          <View style={s.actions}>
+            <AnimatedPressable scaleDown={0.95} onPress={() => shareCard(card)}
+              style={[s.actionBtn, { backgroundColor: colors.accent }]}>
+              <View style={s.actionBtnInner}>
+                <Ionicons name="share-outline" size={18} color="#f7f7f7" />
+                <Text style={[s.actionBtnText, { fontSize: fontSizes.base, fontFamily }]}>Share</Text>
+              </View>
+            </AnimatedPressable>
+            <AnimatedPressable scaleDown={0.95} onPress={() => shareAsContact(card)}
+              style={[s.actionBtn, { backgroundColor: colors.border }]}>
+              <View style={s.actionBtnInner}>
+                <Ionicons name="person-add-outline" size={18} color={colors.text} />
+                <Text style={[s.actionBtnText, { color: colors.text, fontSize: fontSizes.base, fontFamily }]}>Contact</Text>
+              </View>
+            </AnimatedPressable>
+          </View>
+          <View style={s.actions}>
+            <AnimatedPressable scaleDown={0.95} onPress={() => {
+              setForm(cardToForm(card));
+              setImages(card.card_images || []);
+              setCoverIndex(0);
+              navigate('form');
+            }}
+              style={[s.actionBtn, { backgroundColor: colors.border }]}>
+              <View style={s.actionBtnInner}>
+                <Ionicons name="create-outline" size={18} color={colors.text} />
+                <Text style={[s.actionBtnText, { color: colors.text, fontSize: fontSizes.base, fontFamily }]}>Edit</Text>
+              </View>
+            </AnimatedPressable>
+            <AnimatedPressable scaleDown={0.95} onPress={() => deleteCard(card)}
+              style={[s.actionBtn, { backgroundColor: '#a10c0c' }]}>
+              <View style={s.actionBtnInner}>
+                <Ionicons name="trash-outline" size={18} color="#f7f7f7" />
+                <Text style={[s.actionBtnText, { fontSize: fontSizes.base, fontFamily }]}>Delete</Text>
+              </View>
+            </AnimatedPressable>
+          </View>
         </View>
 
         <AnimatedPressable
@@ -541,13 +559,6 @@ export default function MyCardScreen() {
           </View>
         </AnimatedPressable>
 
-        <AnimatedPressable scaleDown={0.95} onPress={() => deleteCard(card)}
-          style={[s.deleteBtn, { borderColor: colors.border }]}>
-          <View style={s.actionBtnInner}>
-            <Ionicons name="trash-outline" size={16} color="#a10c0c" />
-            <Text style={[s.deleteBtnText, { fontSize: fontSizes.sm, fontFamily }]}>Delete Card</Text>
-          </View>
-        </AnimatedPressable>
       </>
     );
   };
@@ -848,10 +859,13 @@ const s = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 8,
   },
+  actionGrid: {
+    gap: 10,
+    marginBottom: 8,
+  },
   actions: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 8,
   },
   actionBtn: {
     flex: 1,

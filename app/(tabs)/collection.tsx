@@ -11,7 +11,7 @@ import { useTheme } from '@/lib/theme';
 import { supabase } from '@/lib/supabase';
 import { PRESET_CATEGORIES, cardShadow } from '@/lib/constants';
 import type { StashCard } from '@/lib/types';
-import { formatCardText, formatCategoryCards } from '@/lib/sharing';
+import { formatCardText, formatCategoryCards, shareAsContact } from '@/lib/sharing';
 import { useFocusEffect } from 'expo-router';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
@@ -652,28 +652,39 @@ export default function CollectionScreen() {
                 </View>
               )}
 
-              <View style={[s.actionRow, { borderTopColor: colors.border }]}>
-                <AnimatedPressable onPress={() => shareCard(card)} scaleDown={0.95}
-                  style={[s.actionBtn, { flex: 1, backgroundColor: colors.border }]}>
-                  <View style={s.actionBtnInner}>
-                    <Ionicons name="share-outline" size={16} color={colors.text} />
-                    <Text style={[s.actionBtnText, { color: colors.text, fontSize: fontSizes.base, fontFamily }]}>Share</Text>
-                  </View>
-                </AnimatedPressable>
-                <AnimatedPressable onPress={() => startEdit(card)} scaleDown={0.95}
-                  style={[s.actionBtn, { flex: 1, backgroundColor: colors.accent }]}>
-                  <View style={s.actionBtnInner}>
-                    <Ionicons name="create-outline" size={16} color="#f7f7f7" />
-                    <Text style={[s.actionBtnText, { fontSize: fontSizes.base, fontFamily }]}>Edit</Text>
-                  </View>
-                </AnimatedPressable>
-                <AnimatedPressable onPress={() => deleteCard(card.id)} scaleDown={0.95}
-                  style={[s.actionBtn, { flex: 1, backgroundColor: '#a10c0c' }]}>
-                  <View style={s.actionBtnInner}>
-                    <Ionicons name="trash-outline" size={16} color="#f7f7f7" />
-                    <Text style={[s.actionBtnText, { fontSize: fontSizes.base, fontFamily }]}>Delete</Text>
-                  </View>
-                </AnimatedPressable>
+              <View style={[s.actionGrid, { borderTopColor: colors.border }]}>
+                <View style={s.actionRow}>
+                  <AnimatedPressable onPress={() => shareCard(card)} scaleDown={0.95}
+                    style={[s.actionBtn, { flex: 1, backgroundColor: colors.border }]}>
+                    <View style={s.actionBtnInner}>
+                      <Ionicons name="share-outline" size={16} color={colors.text} />
+                      <Text style={[s.actionBtnText, { color: colors.text, fontSize: fontSizes.base, fontFamily }]}>Share</Text>
+                    </View>
+                  </AnimatedPressable>
+                  <AnimatedPressable onPress={() => shareAsContact(card)} scaleDown={0.95}
+                    style={[s.actionBtn, { flex: 1, backgroundColor: colors.border }]}>
+                    <View style={s.actionBtnInner}>
+                      <Ionicons name="person-add-outline" size={16} color={colors.text} />
+                      <Text style={[s.actionBtnText, { color: colors.text, fontSize: fontSizes.base, fontFamily }]}>Contact</Text>
+                    </View>
+                  </AnimatedPressable>
+                </View>
+                <View style={s.actionRow}>
+                  <AnimatedPressable onPress={() => startEdit(card)} scaleDown={0.95}
+                    style={[s.actionBtn, { flex: 1, backgroundColor: colors.accent }]}>
+                    <View style={s.actionBtnInner}>
+                      <Ionicons name="create-outline" size={16} color="#f7f7f7" />
+                      <Text style={[s.actionBtnText, { fontSize: fontSizes.base, fontFamily }]}>Edit</Text>
+                    </View>
+                  </AnimatedPressable>
+                  <AnimatedPressable onPress={() => deleteCard(card.id)} scaleDown={0.95}
+                    style={[s.actionBtn, { flex: 1, backgroundColor: '#a10c0c' }]}>
+                    <View style={s.actionBtnInner}>
+                      <Ionicons name="trash-outline" size={16} color="#f7f7f7" />
+                      <Text style={[s.actionBtnText, { fontSize: fontSizes.base, fontFamily }]}>Delete</Text>
+                    </View>
+                  </AnimatedPressable>
+                </View>
               </View>
             </View>
           )}
@@ -822,7 +833,8 @@ export default function CollectionScreen() {
                 </View>
               </View>
 
-              <View style={[s.actionRow, { borderTopColor: colors.border }]}>
+              <View style={[s.actionGrid, { borderTopColor: colors.border }]}>
+                <View style={s.actionRow}>
                 <AnimatedPressable onPress={() => saveEdit(card.id)}
                   disabled={savingId === card.id} scaleDown={0.95}
                   style={[s.actionBtn, {
@@ -837,6 +849,7 @@ export default function CollectionScreen() {
                   style={[s.actionBtn, { backgroundColor: colors.border, flex: 1 }]}>
                   <Text style={[s.actionBtnText, { color: colors.text, fontSize: fontSizes.base, fontFamily }]}>Cancel</Text>
                 </AnimatedPressable>
+                </View>
               </View>
             </View>
           )}
@@ -1341,12 +1354,15 @@ const s = StyleSheet.create({
     marginLeft: 8,
   },
   smallBtnText: { fontWeight: '600' },
-  actionRow: {
-    flexDirection: 'row',
+  actionGrid: {
     gap: 10,
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 10,
   },
   actionBtn: {
     paddingVertical: 16,

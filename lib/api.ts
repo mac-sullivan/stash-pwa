@@ -1,108 +1,42 @@
+import { supabase } from './supabase';
 import type { ParsedCard } from './types';
 
-const ANTHROPIC_API_KEY = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY!;
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
+const FUNCTION_URL = `${SUPABASE_URL}/functions/v1/parse-card`;
 
-const PARSE_PROMPT = `Parse this contact information and extract structured data. Return ONLY valid JSON (no markdown, no code blocks, just raw JSON) with these fields:
-{
-  "name": "person or business name",
-  "company": "company name if different from person name",
-  "phone": "primary phone number",
-  "additionalPhone": "secondary phone number if present",
-  "email": "email address",
-  "website": "primary website URL",
-  "additionalWebsite": "secondary website URL if present",
-  "address": "physical address if present",
-  "socialMedia": {
-    "facebook": "url if present",
-    "instagram": "url if present",
-    "linkedin": "url if present"
-  },
-  "notes": "any other relevant info like job title, tagline, etc.",
-  "categories": ["suggest 1-2 categories from this list: Restaurant, Retail, Service, Health, Tech, Finance, Creative, Education, Real Estate, Other"]
-}`;
+// Edge Functions gateway requires JWT-format anon key (not sb_publishable_ format)
+const EDGE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljY3lpYXZhaGtrcm9kd3drYWltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5NDM4ODcsImV4cCI6MjA4NjUxOTg4N30.OVilPDzsTtyIokJ8rl93MSBuuPib_3-MdLkNeTHNtFM';
 
-function stripCodeBlocks(text: string): string {
-  let cleaned = text.trim();
-  if (cleaned.startsWith('```')) {
-    cleaned = cleaned.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+async function callParseFunction(body: Record<string, unknown>): Promise<ParsedCard> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    throw new Error('Not authenticated');
   }
-  return cleaned;
+
+  const response = await fetch(FUNCTION_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`,
+      'apikey': EDGE_ANON_KEY,
+    },
+    body: JSON.stringify(body),
+  });
+
+  const responseText = await response.text();
+
+  if (!response.ok) {
+    console.error('[parse] error:', response.status, responseText);
+    throw new Error(`Parse error (${response.status}): ${responseText}`);
+  }
+
+  return JSON.parse(responseText);
 }
 
 export async function parseCardImage(base64: string): Promise<ParsedCard> {
-  const mediaType = base64.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
-  const rawBase64 = base64.replace(/^data:image\/\w+;base64,/, '');
-
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
-      messages: [{
-        role: 'user',
-        content: [
-          {
-            type: 'image',
-            source: {
-              type: 'base64',
-              media_type: mediaType,
-              data: rawBase64,
-            },
-          },
-          {
-            type: 'text',
-            text: `${PARSE_PROMPT}\n\nThis is a photo of a business card. Extract all visible contact information.`,
-          },
-        ],
-      }],
-    }),
-  });
-
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`API error: ${err}`);
-  }
-
-  const data = await response.json();
-  const content = data.content?.[0];
-  if (content?.type === 'text') {
-    return JSON.parse(stripCodeBlocks(content.text));
-  }
-  throw new Error('Unexpected response format');
+  return callParseFunction({ type: 'image', base64 });
 }
 
 export async function parseQrText(text: string): Promise<ParsedCard> {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
-      messages: [{
-        role: 'user',
-        content: `${PARSE_PROMPT}\n\nThis text was decoded from a QR code. It may be in vCard/vCF format, meCard format, a URL, or plain text with contact information.\n\nText:\n${text}`,
-      }],
-    }),
-  });
-
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`API error: ${err}`);
-  }
-
-  const data = await response.json();
-  const content = data.content?.[0];
-  if (content?.type === 'text') {
-    return JSON.parse(stripCodeBlocks(content.text));
-  }
-  throw new Error('Unexpected response format');
+  return callParseFunction({ type: 'qr', text });
 }
