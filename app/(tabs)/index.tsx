@@ -347,6 +347,13 @@ export default function ScanScreen() {
     setParsedData(prev => prev ? { ...prev, [key]: value } : prev);
   };
 
+  const updateSocialField = (platform: string, value: string) => {
+    setParsedData(prev => prev ? {
+      ...prev,
+      socialMedia: { ...prev.socialMedia, [platform]: value },
+    } : prev);
+  };
+
   const renderParsedData = () => {
     if (!parsedData) return null;
 
@@ -390,6 +397,34 @@ export default function ScanScreen() {
             </View>
           );
         })}
+
+        {/* Social Media */}
+        {[
+          { platform: 'facebook', label: 'Facebook', icon: 'logo-facebook' as const },
+          { platform: 'instagram', label: 'Instagram', icon: 'logo-instagram' as const },
+          { platform: 'linkedin', label: 'LinkedIn', icon: 'logo-linkedin' as const },
+        ].map(({ platform, label, icon }) => (
+          <View key={platform} style={s.field}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+              <Ionicons name={icon} size={14} color={colors.textMuted} />
+              <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.xs, fontFamily, marginBottom: 0 }]}>{label}</Text>
+            </View>
+            <TextInput
+              value={parsedData.socialMedia?.[platform as keyof typeof parsedData.socialMedia] || ''}
+              onChangeText={text => updateSocialField(platform, text)}
+              placeholder={`${label} URL or handle`}
+              placeholderTextColor={colors.textMuted}
+              autoCapitalize="none"
+              style={[s.input, {
+                backgroundColor: colors.inputBg,
+                borderColor: (parsedData.socialMedia?.[platform as keyof typeof parsedData.socialMedia] || '').trim() ? colors.accent + '55' : colors.inputBorder,
+                color: colors.text,
+                fontSize: fontSizes.base,
+                fontFamily,
+              }]}
+            />
+          </View>
+        ))}
 
         {renderCategoryPicker()}
 

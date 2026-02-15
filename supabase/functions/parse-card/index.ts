@@ -10,17 +10,19 @@ const PARSE_PROMPT = `Parse this contact information and extract structured data
   "phone": "primary phone number",
   "additionalPhone": "secondary phone number if present",
   "email": "email address",
-  "website": "primary website URL",
-  "additionalWebsite": "secondary website URL if present",
+  "website": "primary website URL (NOT social media links — those go in socialMedia)",
+  "additionalWebsite": "secondary website URL if present (NOT social media links)",
   "address": "physical address if present",
   "socialMedia": {
-    "facebook": "url if present",
-    "instagram": "url if present",
-    "linkedin": "url if present"
+    "facebook": "Facebook URL, page name, or handle if present. Look for facebook.com links, FB icons, or 'Facebook:' labels",
+    "instagram": "Instagram URL or @handle if present. Look for instagram.com links, IG icons, or 'Instagram:' / '@' labels",
+    "linkedin": "LinkedIn URL or profile path if present. Look for linkedin.com links or 'LinkedIn:' labels"
   },
-  "notes": "any other relevant info like job title, tagline, etc.",
+  "notes": "any other relevant info like job title, tagline, etc. Do NOT put social media here",
   "categories": ["suggest 1-2 categories from this list: Restaurant, Retail, Service, Health, Tech, Finance, Creative, Education, Real Estate, Other"]
-}`;
+}
+
+IMPORTANT: Any URL or handle for Facebook, Instagram, or LinkedIn MUST go in the socialMedia object, never in website, additionalWebsite, or notes.`;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

@@ -97,6 +97,7 @@ export default function CollectionScreen() {
   const [editCoverUrl, setEditCoverUrl] = useState<string | null>(null);
   const [removedCategories, setRemovedCategories] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<'recent' | 'a-z' | 'z-a'>('recent');
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const sheetTranslateY = useRef(new Animated.Value(60)).current;
@@ -257,6 +258,7 @@ export default function CollectionScreen() {
       additional_website: card.additional_website,
       address: card.address,
       notes: card.notes,
+      social_media: card.social_media || { facebook: '', instagram: '', linkedin: '' },
     });
     setEditCategories(card.categories || []);
     setEditImages(getCardImages(card));
@@ -294,6 +296,9 @@ export default function CollectionScreen() {
           additional_website: editData.additional_website || null,
           address: editData.address || null,
           notes: editData.notes || null,
+          social_media: editData.social_media && Object.values(editData.social_media).some(v => v)
+            ? editData.social_media
+            : null,
           categories: editCategories.length > 0 ? editCategories : null,
           card_image_url: coverUrl,
           card_images: editImages.length > 0 ? editImages : null,
@@ -320,14 +325,19 @@ export default function CollectionScreen() {
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
+          setDeletingId(id);
           try {
             const { error } = await supabase.from('stash').delete().eq('id', id);
             if (error) throw error;
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             setExpandedId(null);
-            fetchCards();
+            // Remove card from local state immediately — no flash
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            setCards(prev => prev.filter(c => c.id !== id));
+            setDeletingId(null);
           } catch (error) {
             console.error('Delete error:', error);
+            setDeletingId(null);
             Alert.alert('Error', 'Failed to delete card.');
           }
         },
@@ -372,8 +382,20 @@ export default function CollectionScreen() {
     setCustomCategory('');
   };
 
-  const openLink = (url: string) => {
-    const formatted = url.startsWith('http') ? url : `https://${url}`;
+  const openLink = (url: string, platform?: string) => {
+    let formatted = url.trim();
+    // Handle social media handles (e.g. @username or plain username)
+    if (platform && !formatted.includes('.') && !formatted.startsWith('http')) {
+      const handle = formatted.replace(/^@/, '');
+      const bases: Record<string, string> = {
+        instagram: `https://instagram.com/${handle}`,
+        facebook: `https://facebook.com/${handle}`,
+        linkedin: `https://linkedin.com/in/${handle}`,
+      };
+      formatted = bases[platform] || `https://${formatted}`;
+    } else if (!formatted.startsWith('http')) {
+      formatted = `https://${formatted}`;
+    }
     Linking.openURL(formatted);
   };
 
@@ -417,17 +439,25 @@ export default function CollectionScreen() {
   const renderCard = ({ item: card, index }: { item: StashCard; index: number }) => {
     const isExpanded = expandedId === card.id;
     const isEditing = editingId === card.id;
+    const isDeleting = deletingId === card.id;
     const quickField = card.phone ? 'phone' : card.email ? 'email' : card.address ? 'address' : null;
 
     return (
       <FadeInCard index={index} key={`${card.id}-${animKey}`}>
         <AnimatedPressable
           scaleDown={0.98}
+          disabled={isDeleting}
           onPress={() => {
             if (!isEditing) toggleExpand(card.id);
           }}
-          style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border, ...cardShadow(colors.cardShadow) }]}
+          style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border, ...cardShadow(colors.cardShadow) }, isDeleting && { opacity: 0.5 }]}
         >
+          {isDeleting && (
+            <View style={s.deletingOverlay}>
+              <ActivityIndicator size="small" color="#a10c0c" />
+              <Text style={[s.deletingText, { fontFamily }]}>Deleting...</Text>
+            </View>
+          )}
           {/* Top section: info + image side by side */}
           <View style={s.cardTop}>
             <View style={s.cardInfo}>
@@ -462,10 +492,7 @@ export default function CollectionScreen() {
                           <Ionicons name="call-outline" size={14} color={colors.textMuted} />
                           <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.sm, fontFamily }]}>Phone</Text>
                         </View>
-                        <View style={s.linkValue}>
-                          <Text style={[s.value, { color: colors.link, fontSize: fontSizes.base, fontFamily, textDecorationLine: 'underline' }]} numberOfLines={1}>{card.phone}</Text>
-                          <Ionicons name="open-outline" size={14} color={colors.link} />
-                        </View>
+                        <Text style={[s.value, { color: colors.link, fontSize: fontSizes.base, fontFamily, textDecorationLine: 'underline' }]} numberOfLines={1}>{card.phone}</Text>
                       </View>
                     </Pressable>
                   </View>
@@ -478,10 +505,7 @@ export default function CollectionScreen() {
                           <Ionicons name="mail-outline" size={14} color={colors.textMuted} />
                           <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.sm, fontFamily }]}>Email</Text>
                         </View>
-                        <View style={s.linkValue}>
-                          <Text style={[s.value, { color: colors.link, fontSize: fontSizes.base, fontFamily, textDecorationLine: 'underline' }]} numberOfLines={1}>{card.email}</Text>
-                          <Ionicons name="open-outline" size={14} color={colors.link} />
-                        </View>
+                        <Text style={[s.value, { color: colors.link, fontSize: fontSizes.base, fontFamily, textDecorationLine: 'underline' }]} numberOfLines={1}>{card.email}</Text>
                       </View>
                     </Pressable>
                   </View>
@@ -494,10 +518,7 @@ export default function CollectionScreen() {
                           <Ionicons name="location-outline" size={14} color={colors.textMuted} />
                           <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.sm, fontFamily }]}>Address</Text>
                         </View>
-                        <View style={s.linkValue}>
-                          <Text style={[s.value, { color: colors.link, fontSize: fontSizes.base, fontFamily, textDecorationLine: 'underline' }]} numberOfLines={1}>{card.address}</Text>
-                          <Ionicons name="open-outline" size={14} color={colors.link} />
-                        </View>
+                        <Text style={[s.value, { color: colors.link, fontSize: fontSizes.base, fontFamily, textDecorationLine: 'underline' }]} numberOfLines={1}>{card.address}</Text>
                       </View>
                     </Pressable>
                   </View>
@@ -624,7 +645,7 @@ export default function CollectionScreen() {
                   </View>
                   {Object.entries(card.social_media).map(([platform, url]) =>
                     url ? (
-                      <Pressable key={platform} onPress={() => openLink(url)}>
+                      <Pressable key={platform} onPress={() => openLink(url, platform)}>
                         <Text style={[s.socialLink, { color: colors.link, fontSize: fontSizes.base, fontFamily }]}>
                           {platform.charAt(0).toUpperCase() + platform.slice(1)}
                         </Text>
@@ -701,6 +722,37 @@ export default function CollectionScreen() {
               {renderEditField('Additional Website', 'additional_website')}
               {renderEditField('Address', 'address')}
               {renderEditField('Notes', 'notes')}
+
+              {/* Social Media */}
+              {[
+                { platform: 'facebook', label: 'Facebook', icon: 'logo-facebook' as const },
+                { platform: 'instagram', label: 'Instagram', icon: 'logo-instagram' as const },
+                { platform: 'linkedin', label: 'LinkedIn', icon: 'logo-linkedin' as const },
+              ].map(({ platform, label, icon }) => (
+                <View style={s.field} key={platform}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                    <Ionicons name={icon} size={14} color={colors.textMuted} />
+                    <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.sm, fontFamily, marginBottom: 0 }]}>{label}</Text>
+                  </View>
+                  <TextInput
+                    value={(editData.social_media as any)?.[platform] || ''}
+                    onChangeText={text => setEditData(prev => ({
+                      ...prev,
+                      social_media: { ...(prev.social_media as any), [platform]: text },
+                    }))}
+                    placeholder={`${label} URL or handle`}
+                    placeholderTextColor={colors.textMuted}
+                    autoCapitalize="none"
+                    style={[s.editInput, {
+                      backgroundColor: colors.inputBg,
+                      borderColor: colors.inputBorder,
+                      color: colors.text,
+                      fontSize: fontSizes.base,
+                      fontFamily,
+                    }]}
+                  />
+                </View>
+              ))}
 
               {/* Image editor */}
               <View style={s.field}>
@@ -893,7 +945,7 @@ export default function CollectionScreen() {
         renderItem={renderCard}
         contentContainerStyle={[s.listContent, { paddingTop: headerHeight + 16, paddingBottom: tabBarHeight + 20 }]}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.link} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.link} progressViewOffset={headerHeight} />
         }
         ListHeaderComponent={filtersActive ? (
           <View style={[s.activeFilterBar, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
@@ -1292,12 +1344,13 @@ const s = StyleSheet.create({
   },
   cardInfo: {
     flex: 1,
+    overflow: 'hidden',
   },
   cardThumb: {
     width: 120,
     height: 120,
     borderRadius: 8,
-    marginLeft: 12,
+    marginLeft: 8,
   },
   cardName: { fontWeight: '700' },
   cardCompany: { marginTop: 2 },
@@ -1314,6 +1367,19 @@ const s = StyleSheet.create({
   },
   quickInfo: { marginTop: 8 },
   quickText: { marginTop: 2 },
+  deletingOverlay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 8,
+    marginBottom: 8,
+  },
+  deletingText: {
+    color: '#a10c0c',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   detailsToggle: {
     flexDirection: 'row',
     alignItems: 'center',
