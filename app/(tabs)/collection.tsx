@@ -1195,7 +1195,11 @@ const s = StyleSheet.create({
     gap: 6,
   },
   filterChipActive: {
-    boxShadow: '0px 2px 4px rgba(0,0,0,0.2)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
   },
   filterChipText: { fontWeight: '600' },
   filterCount: {
@@ -1257,7 +1261,11 @@ const s = StyleSheet.create({
     borderRadius: 26,
     justifyContent: 'center',
     alignItems: 'center',
-    boxShadow: '0px 4px 12px rgba(0,0,0,0.25)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 8,
   },
   // Bottom sheet
   modalRoot: {
@@ -1270,7 +1278,11 @@ const s = StyleSheet.create({
     padding: 20,
     paddingBottom: 40,
     maxHeight: '80%',
-    boxShadow: '0px -4px 12px rgba(0,0,0,0.2)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 8,
   },
   sheetScroll: {
     marginBottom: 12,

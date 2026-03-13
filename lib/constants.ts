@@ -21,12 +21,20 @@ export interface ThemeColors {
   cardShadow: string;
 }
 
-export const cardShadow = (color: string) => ({
-  boxShadow: `0px 2px 8px ${color}`,
+export const cardShadow = (_color: string) => ({
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 4,
+  elevation: 3,
 });
 
-export const cardShadowLg = (color: string) => ({
-  boxShadow: `0px 4px 16px ${color}`,
+export const cardShadowLg = (_color: string) => ({
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.15,
+  shadowRadius: 8,
+  elevation: 6,
 });
 
 export type FontSizeName = 'small' | 'medium' | 'large';

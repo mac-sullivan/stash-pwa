@@ -154,24 +154,10 @@ export default function ManualScreen() {
         categories: selectedCategories.length > 0 ? selectedCategories : null,
       };
 
-      // Direct REST call bypassing supabase-js client
-      const res = await fetch(
-        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/rest/v1/stash`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!,
-            'Authorization': `Bearer ${session.access_token}`,
-            'Prefer': 'return=minimal',
-          },
-          body: JSON.stringify(row),
-        }
-      );
+      const { error: insertError } = await supabase.from('stash').insert(row);
 
-      if (!res.ok) {
-        const body = await res.text();
-        throw new Error(body);
+      if (insertError) {
+        throw new Error(insertError.message);
       }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

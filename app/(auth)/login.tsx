@@ -7,14 +7,15 @@ import {
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '@/lib/theme';
 import { supabase } from '@/lib/supabase';
-import { cardShadow } from '@/lib/constants';
+import { themes, cardShadow } from '@/lib/constants';
 
 WebBrowser.maybeCompleteAuthSession();
 
+// Login screen always uses light theme with default (sans-serif) font
+const colors = themes.light;
+
 export default function LoginScreen() {
-  const { colors, fontFamily } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
@@ -146,7 +147,7 @@ export default function LoginScreen() {
           <Text style={[styles.brandTitle, { color: colors.text, fontFamily: 'PlayfairDisplay-Bold' }]}>
             Stash
           </Text>
-          <Text style={[styles.brandSubtitle, { color: colors.textMuted, fontFamily }]}>
+          <Text style={[styles.brandSubtitle, { color: colors.textMuted }]}>
             Your business card vault
           </Text>
         </View>
@@ -175,14 +176,14 @@ export default function LoginScreen() {
             ) : (
               <>
                 <Ionicons name="logo-google" size={18} color={colors.text} style={{ marginRight: 8 }} />
-                <Text style={[styles.googleBtnText, { color: colors.text, fontFamily }]}>Continue with Google</Text>
+                <Text style={[styles.googleBtnText, { color: colors.text }]}>Continue with Google</Text>
               </>
             )}
           </Pressable>
 
           <View style={styles.dividerRow}>
             <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-            <Text style={[styles.dividerText, { color: colors.textMuted, fontFamily }]}>or</Text>
+            <Text style={[styles.dividerText, { color: colors.textMuted }]}>or</Text>
             <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
           </View>
 
@@ -199,7 +200,6 @@ export default function LoginScreen() {
               backgroundColor: colors.inputBg,
               borderColor: colors.inputBorder,
               color: colors.text,
-              fontFamily,
             }]}
           />
           <TextInput
@@ -212,21 +212,20 @@ export default function LoginScreen() {
               backgroundColor: colors.inputBg,
               borderColor: colors.inputBorder,
               color: colors.text,
-              fontFamily,
             }]}
           />
 
           {/* Forgot Password (sign-in mode only) */}
           {!isSignUp && !resetSent && (
             <Pressable onPress={handleResetPassword} style={styles.forgotRow}>
-              <Text style={[styles.forgotText, { color: colors.link, fontFamily }]}>Forgot password?</Text>
+              <Text style={[styles.forgotText, { color: colors.link }]}>Forgot password?</Text>
             </Pressable>
           )}
 
           {/* Reset email sent confirmation */}
           {resetSent && (
             <View style={[styles.resetBanner, { backgroundColor: colors.accent + '18' }]}>
-              <Text style={[styles.resetBannerText, { color: colors.accent, fontFamily }]}>
+              <Text style={[styles.resetBannerText, { color: colors.accent }]}>
                 Check your email for a password reset link.
               </Text>
             </View>
@@ -234,7 +233,7 @@ export default function LoginScreen() {
 
           {/* Error message */}
           {errorMsg ? (
-            <Text style={[styles.errorText, { fontFamily }]}>{errorMsg}</Text>
+            <Text style={[styles.errorText, {}]}>{errorMsg}</Text>
           ) : null}
 
           <Pressable
@@ -246,11 +245,11 @@ export default function LoginScreen() {
             }]}
           >
             {loading && <ActivityIndicator color="#f7f7f7" size="small" style={{ marginRight: 8 }} />}
-            <Text style={[styles.primaryBtnText, { fontFamily }]}>{buttonLabel}</Text>
+            <Text style={[styles.primaryBtnText, {}]}>{buttonLabel}</Text>
           </Pressable>
 
           <Pressable onPress={() => { setIsSignUp(!isSignUp); setErrorMsg(''); setResetSent(false); }} style={styles.toggleRow}>
-            <Text style={[styles.toggleText, { color: colors.textMuted, fontFamily }]}>
+            <Text style={[styles.toggleText, { color: colors.textMuted }]}>
               {isSignUp ? 'Already have an account?' : "Don't have an account?"}
               {' '}
               <Text style={{ color: colors.link, fontWeight: '600' }}>

@@ -133,17 +133,14 @@ export default function MyCardScreen() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const res = await fetch(
-        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/rest/v1/my_cards?user_id=eq.${session.user.id}&order=created_at.desc`,
-        {
-          headers: {
-            'apikey': process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!,
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-        }
-      );
-      const data = await res.json();
-      setCards(Array.isArray(data) ? data : []);
+      const { data, error } = await supabase
+        .from('my_cards')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setCards(data || []);
     } catch (e) {
       console.error('Fetch my cards error:', e);
     } finally {
@@ -269,24 +266,15 @@ export default function MyCardScreen() {
         card_images: images.length > 0 ? images : null,
       };
 
-      const url = selectedCard
-        ? `${process.env.EXPO_PUBLIC_SUPABASE_URL}/rest/v1/my_cards?id=eq.${selectedCard.id}`
-        : `${process.env.EXPO_PUBLIC_SUPABASE_URL}/rest/v1/my_cards`;
-
-      const res = await fetch(url, {
-        method: selectedCard ? 'PATCH' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!,
-          'Authorization': `Bearer ${session.access_token}`,
-          'Prefer': 'return=representation',
-        },
-        body: JSON.stringify(selectedCard ? { ...row, updated_at: new Date().toISOString() } : row),
-      });
-
-      if (!res.ok) {
-        const body = await res.text();
-        throw new Error(body);
+      if (selectedCard) {
+        const { error: updateError } = await supabase
+          .from('my_cards')
+          .update({ ...row, updated_at: new Date().toISOString() })
+          .eq('id', selectedCard.id);
+        if (updateError) throw new Error(updateError.message);
+      } else {
+        const { error: insertError } = await supabase.from('my_cards').insert(row);
+        if (insertError) throw new Error(insertError.message);
       }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -313,17 +301,11 @@ export default function MyCardScreen() {
           try {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) return;
-            const res = await fetch(
-              `${process.env.EXPO_PUBLIC_SUPABASE_URL}/rest/v1/my_cards?id=eq.${card.id}`,
-              {
-                method: 'DELETE',
-                headers: {
-                  'apikey': process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!,
-                  'Authorization': `Bearer ${session.access_token}`,
-                },
-              }
-            );
-            if (!res.ok) throw new Error(await res.text());
+            const { error: deleteError } = await supabase
+              .from('my_cards')
+              .delete()
+              .eq('id', card.id);
+            if (deleteError) throw new Error(deleteError.message);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             setSelectedCard(null);
             await fetchCards();
