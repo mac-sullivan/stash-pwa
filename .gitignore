@@ -42,6 +42,8 @@ next-env.d.ts
 
 # expo
 .expo/
+/dist/
+/ios/
 
 # apple keys and misc
 AuthKey_*.p8
