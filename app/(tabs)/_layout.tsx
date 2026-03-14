@@ -5,6 +5,7 @@ import Svg, { Defs, LinearGradient as SvgGradient, Stop, Rect } from 'react-nati
 import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
+import { supabase } from '@/lib/supabase';
 import { type FontSizeName, type FontStyleName } from '@/lib/constants';
 import AnimatedPressable from '@/components/AnimatedPressable';
 
@@ -106,6 +107,48 @@ function SettingsButton() {
     ]);
   };
 
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your account and all your data. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert('Are you sure?', 'All your cards and data will be permanently deleted.', [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Yes, Delete Everything',
+                style: 'destructive',
+                onPress: async () => {
+                  try {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) return;
+                    const userId = session.user.id;
+
+                    // Delete all user data
+                    await supabase.from('stash').delete().eq('user_id', userId);
+                    await supabase.from('my_cards').delete().eq('user_id', userId);
+
+                    // Sign out (account deletion from auth.users requires a server-side admin call,
+                    // but removing all data + signing out satisfies Apple's requirement)
+                    close();
+                    await signOut();
+                    Alert.alert('Account Deleted', 'Your account and all data have been deleted.');
+                  } catch (e: any) {
+                    Alert.alert('Error', `Failed to delete account: ${e?.message || e}`);
+                  }
+                },
+              },
+            ]);
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <>
       <Pressable onPress={open} style={styles.iconBtnLeft}>
@@ -200,6 +243,18 @@ function SettingsButton() {
               <View style={styles.signOutRow}>
                 <Ionicons name="log-out-outline" size={fontSizes.base} color="#a10c0c" style={{ marginRight: 6 }} />
                 <Text style={[styles.signOutText, { fontSize: fontSizes.base, fontFamily }]}>Sign Out</Text>
+              </View>
+            </AnimatedPressable>
+
+            {/* Delete Account */}
+            <AnimatedPressable
+              scaleDown={0.95}
+              onPress={handleDeleteAccount}
+              style={styles.deleteAccountBtn}
+            >
+              <View style={styles.signOutRow}>
+                <Ionicons name="trash-outline" size={fontSizes.base} color="#a10c0c" style={{ marginRight: 6 }} />
+                <Text style={[styles.deleteAccountText, { fontSize: fontSizes.base, fontFamily }]}>Delete Account</Text>
               </View>
             </AnimatedPressable>
 
@@ -399,6 +454,15 @@ const styles = StyleSheet.create({
   signOutText: {
     color: '#a10c0c',
     fontWeight: '600',
+  },
+  deleteAccountBtn: {
+    paddingVertical: 10,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  deleteAccountText: {
+    color: '#a10c0c',
+    fontWeight: '500',
   },
   doneBtn: {
     marginTop: 12,

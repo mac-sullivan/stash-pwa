@@ -27,8 +27,8 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: 'dark',
-  colors: themes.dark,
+  theme: 'light',
+  colors: themes.light,
   setTheme: () => {},
   fontSize: 'medium',
   fontSizes: FONT_SIZES.medium,
@@ -43,7 +43,7 @@ const FONT_SIZE_KEY = 'stash-font-size';
 const FONT_STYLE_KEY = 'stash-font-style';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeName>('dark');
+  const [theme, setThemeState] = useState<ThemeName>('light');
   const [fontSize, setFontSizeState] = useState<FontSizeName>('medium');
   const [fontStyle, setFontStyleState] = useState<FontStyleName>('sans-serif');
 

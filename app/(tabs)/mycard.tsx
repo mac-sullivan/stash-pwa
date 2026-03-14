@@ -18,6 +18,7 @@ import { formatCardText, shareAsContact } from '@/lib/sharing';
 import type { MyCard, ParsedCard } from '@/lib/types';
 import { cardShadow } from '@/lib/constants';
 import AnimatedPressable from '@/components/AnimatedPressable';
+import StashLoader from '@/components/StashLoader';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -333,7 +334,7 @@ export default function MyCardScreen() {
   if (loading) {
     return (
       <View style={[s.centered, { backgroundColor: colors.bg }]}>
-        <ActivityIndicator size="large" color={colors.accent} />
+        <StashLoader message="Loading..." />
       </View>
     );
   }
@@ -343,26 +344,48 @@ export default function MyCardScreen() {
   const renderList = () => {
     if (cards.length === 0) {
       return (
-        <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border, ...cardShadow(colors.cardShadow) }]}>
-          <View style={s.emptyArea}>
-            <View style={[s.iconCircle, { backgroundColor: colors.accent + '30' }]}>
-              <Ionicons name="person-add-outline" size={36} color={colors.accent} />
+        <>
+          <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border, ...cardShadow(colors.cardShadow) }]}>
+            <View style={s.emptyArea}>
+              <View style={[s.iconCircle, { backgroundColor: colors.accent + '30' }]}>
+                <Ionicons name="person-add-outline" size={36} color={colors.accent} />
+              </View>
+              <Text style={[s.emptyTitle, { color: colors.text, fontSize: fontSizes.lg, fontFamily }]}>
+                Create Your Card
+              </Text>
+              <Text style={[s.emptySub, { color: colors.textMuted, fontSize: fontSizes.sm, fontFamily }]}>
+                Add your business card to share with others
+              </Text>
+              <AnimatedPressable
+                scaleDown={0.95}
+                onPress={() => navigate('choose-method')}
+                style={[s.primaryBtn, { backgroundColor: colors.accent, marginTop: 20, alignSelf: 'stretch' }]}
+              >
+                <Text style={[s.primaryBtnText, { fontSize: fontSizes.base, fontFamily }]}>Get Started</Text>
+              </AnimatedPressable>
             </View>
-            <Text style={[s.emptyTitle, { color: colors.text, fontSize: fontSizes.lg, fontFamily }]}>
-              Create Your Card
-            </Text>
-            <Text style={[s.emptySub, { color: colors.textMuted, fontSize: fontSizes.sm, fontFamily }]}>
-              Add your business card to share with others
-            </Text>
-            <AnimatedPressable
-              scaleDown={0.95}
-              onPress={() => navigate('choose-method')}
-              style={[s.primaryBtn, { backgroundColor: colors.accent, marginTop: 20, alignSelf: 'stretch' }]}
-            >
-              <Text style={[s.primaryBtnText, { fontSize: fontSizes.base, fontFamily }]}>Get Started</Text>
-            </AnimatedPressable>
           </View>
-        </View>
+
+          {/* Feature highlights */}
+          <View style={s.featuresSection}>
+            <Text style={[s.featuresTitle, { color: colors.text, fontSize: fontSizes.base, fontFamily }]}>Your digital business card</Text>
+            {[
+              { icon: 'qr-code-outline' as const, title: 'Share via QR Code', desc: 'Let others scan your code to instantly get your info' },
+              { icon: 'person-add-outline' as const, title: 'Export as Contact', desc: 'Send your details as a vCard to any device' },
+              { icon: 'copy-outline' as const, title: 'Multiple Cards', desc: 'Create different cards for different roles or businesses' },
+            ].map((item, i) => (
+              <View key={i} style={[s.featureRow, { backgroundColor: colors.bgCard, borderColor: colors.border, ...cardShadow(colors.cardShadow) }]}>
+                <View style={[s.featureIcon, { backgroundColor: colors.accent + '18' }]}>
+                  <Ionicons name={item.icon} size={22} color={colors.accent} />
+                </View>
+                <View style={s.featureText}>
+                  <Text style={[s.featureRowTitle, { color: colors.text, fontSize: fontSizes.sm, fontFamily }]}>{item.title}</Text>
+                  <Text style={[s.featureRowDesc, { color: colors.textMuted, fontSize: fontSizes.xs, fontFamily }]}>{item.desc}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </>
       );
     }
 
@@ -492,18 +515,11 @@ export default function MyCardScreen() {
         {/* Actions */}
         <View style={s.actionGrid}>
           <View style={s.actions}>
-            <AnimatedPressable scaleDown={0.95} onPress={() => shareCard(card)}
-              style={[s.actionBtn, { backgroundColor: colors.accent }]}>
-              <View style={s.actionBtnInner}>
-                <Ionicons name="share-outline" size={18} color="#f7f7f7" />
-                <Text style={[s.actionBtnText, { fontSize: fontSizes.base, fontFamily }]}>Share</Text>
-              </View>
-            </AnimatedPressable>
             <AnimatedPressable scaleDown={0.95} onPress={() => shareAsContact(card)}
-              style={[s.actionBtn, { backgroundColor: colors.border }]}>
+              style={[s.actionBtn, { flex: 1, backgroundColor: colors.accent }]}>
               <View style={s.actionBtnInner}>
-                <Ionicons name="person-add-outline" size={18} color={colors.text} />
-                <Text style={[s.actionBtnText, { color: colors.text, fontSize: fontSizes.base, fontFamily }]}>Contact</Text>
+                <Ionicons name="person-add-outline" size={18} color="#f7f7f7" />
+                <Text style={[s.actionBtnText, { fontSize: fontSizes.base, fontFamily }]}>Share Card</Text>
               </View>
             </AnimatedPressable>
           </View>
@@ -610,15 +626,7 @@ export default function MyCardScreen() {
   const renderScan = () => (
     <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border, alignItems: 'center', padding: 40, ...cardShadow(colors.cardShadow) }]}>
       {isProcessing ? (
-        <>
-          <ActivityIndicator size="large" color={colors.accent} />
-          <Text style={[s.emptyTitle, { color: colors.text, marginTop: 16, fontSize: fontSizes.lg, fontFamily }]}>
-            Analyzing card...
-          </Text>
-          <Text style={[s.emptySub, { color: colors.textMuted, fontSize: fontSizes.sm, fontFamily }]}>
-            Extracting contact information
-          </Text>
-        </>
+        <StashLoader size={70} message="Analyzing card..." />
       ) : (
         <>
           <Text style={[s.emptyTitle, { color: colors.text, fontSize: fontSizes.lg, fontFamily }]}>
@@ -774,6 +782,42 @@ const s = StyleSheet.create({
   emptyArea: { alignItems: 'center', paddingVertical: 24 },
   emptyTitle: { fontWeight: '600', marginTop: 12, marginBottom: 4 },
   emptySub: { textAlign: 'center', marginBottom: 8 },
+
+  // Features
+  featuresSection: {
+    marginTop: 8,
+  },
+  featuresTitle: {
+    fontWeight: '600',
+    marginBottom: 12,
+    marginLeft: 4,
+  },
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 0.5,
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 10,
+  },
+  featureIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  featureText: {
+    flex: 1,
+  },
+  featureRowTitle: {
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  featureRowDesc: {
+    lineHeight: 18,
+  },
 
   // List
   listCard: {

@@ -5,6 +5,7 @@ import {
   Animated, LayoutAnimation, Platform, UIManager, Share, Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Rect, G, Defs, LinearGradient as SvgGradient, Stop, RadialGradient } from 'react-native-svg';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/lib/theme';
@@ -17,6 +18,7 @@ import { useHeaderHeight } from '@react-navigation/elements';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import ImageLightbox from '@/components/ImageLightbox';
 import AnimatedPressable from '@/components/AnimatedPressable';
+import StashLoader from '@/components/StashLoader';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -74,6 +76,53 @@ function ChevronAnimated({ expanded, color }: { expanded: boolean; color: string
   );
 }
 
+function StackedCardsIcon({ size = 160, accent }: { size?: number; accent: string }) {
+  const w = size;
+  const h = size;
+  const cx = w / 2;
+  const cy = h / 2 + 2;
+  const cw = w * 0.52;
+  const ch = cw * 0.6;
+
+  return (
+    <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+      <Defs>
+        <RadialGradient id="emptyGlow" cx="50%" cy="52%" r="50%">
+          <Stop offset="0" stopColor={accent} stopOpacity={0.18} />
+          <Stop offset="1" stopColor={accent} stopOpacity={0} />
+        </RadialGradient>
+      </Defs>
+      {/* Glow */}
+      <Rect x={0} y={0} width={w} height={h} fill="url(#emptyGlow)" rx={w / 2} />
+      {/* Back card */}
+      <G transform={`rotate(12, ${cx}, ${cy})`}>
+        <Rect x={cx - cw / 2 + 1} y={cy - ch / 2 + 3} width={cw} height={ch} rx={6}
+          fill="rgba(0,0,0,0.06)" />
+        <Rect x={cx - cw / 2} y={cy - ch / 2} width={cw} height={ch} rx={6}
+          fill="#e8e6de" stroke="#ccc9bc" strokeWidth={1} />
+      </G>
+      {/* Middle card */}
+      <G transform={`rotate(4, ${cx}, ${cy})`}>
+        <Rect x={cx - cw / 2 + 1} y={cy - ch / 2 + 3} width={cw} height={ch} rx={6}
+          fill="rgba(0,0,0,0.06)" />
+        <Rect x={cx - cw / 2} y={cy - ch / 2} width={cw} height={ch} rx={6}
+          fill="#efede5" stroke="#d5d2c5" strokeWidth={1} />
+      </G>
+      {/* Front card */}
+      <G transform={`rotate(-4, ${cx}, ${cy})`}>
+        <Rect x={cx - cw / 2 + 1} y={cy - ch / 2 + 4} width={cw} height={ch} rx={6}
+          fill="rgba(0,0,0,0.08)" />
+        <Rect x={cx - cw / 2} y={cy - ch / 2} width={cw} height={ch} rx={6}
+          fill="#f8f7f2" stroke="#dbd8cb" strokeWidth={1} />
+        {/* S monogram */}
+        <Rect x={cx - 8} y={cy - 6} width={16} height={3} rx={1.5} fill={accent} opacity={0.7} />
+        <Rect x={cx - 6} y={cy + 1} width={12} height={3} rx={1.5} fill={accent} opacity={0.5} />
+        <Rect x={cx - 4} y={cy + 8} width={8} height={3} rx={1.5} fill={accent} opacity={0.3} />
+      </G>
+    </Svg>
+  );
+}
+
 export default function CollectionScreen() {
   const { colors, fontSizes, fontFamily } = useTheme();
   const headerHeight = useHeaderHeight();
@@ -82,7 +131,8 @@ export default function CollectionScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editData, setEditData] = useState<Partial<StashCard>>({});
   const [editCategories, setEditCategories] = useState<string[]>([]);
@@ -187,15 +237,30 @@ export default function CollectionScreen() {
   };
 
   const toggleExpand = (id: number) => {
-    setExpandedId(prev => prev === id ? null : id);
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
   const filteredAndSorted = (() => {
-    const filtered = activeFilters.length > 0
+    let result = activeFilters.length > 0
       ? cards.filter(c => activeFilters.some(f => c.categories?.includes(f)))
       : cards;
-    if (sortBy === 'recent') return filtered;
-    return [...filtered].sort((a, b) => {
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter(c =>
+        (c.name || '').toLowerCase().includes(q) ||
+        (c.company || '').toLowerCase().includes(q) ||
+        (c.email || '').toLowerCase().includes(q) ||
+        (c.phone || '').toLowerCase().includes(q) ||
+        (c.categories || []).some(cat => cat.toLowerCase().includes(q))
+      );
+    }
+    if (sortBy === 'recent') return result;
+    return [...result].sort((a, b) => {
       const nameA = (a.name || '').toLowerCase();
       const nameB = (b.name || '').toLowerCase();
       return sortBy === 'a-z' ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
@@ -437,7 +502,7 @@ export default function CollectionScreen() {
   );
 
   const renderCard = ({ item: card, index }: { item: StashCard; index: number }) => {
-    const isExpanded = expandedId === card.id;
+    const isExpanded = expandedIds.has(card.id);
     const isEditing = editingId === card.id;
     const isDeleting = deletingId === card.id;
     const quickField = card.phone ? 'phone' : card.email ? 'email' : card.address ? 'address' : null;
@@ -460,72 +525,71 @@ export default function CollectionScreen() {
           )}
           {/* Top section: info + image side by side */}
           <View style={s.cardTop}>
-            <View style={s.cardInfo}>
-              <Text style={[s.cardName, { color: colors.text, fontSize: fontSizes.lg, fontFamily }]} numberOfLines={1}>
-                {card.name || 'Unknown'}
+          <View style={s.cardInfo}>
+            <Text style={[s.cardName, { color: colors.text, fontSize: fontSizes.lg, fontFamily }]} numberOfLines={1}>
+              {card.name || 'Unknown'}
+            </Text>
+            {card.company && (
+              <Text style={[s.cardCompany, { color: colors.textMuted, fontSize: fontSizes.base, fontFamily }]} numberOfLines={1}>
+                {card.company}
               </Text>
-              {card.company && (
-                <Text style={[s.cardCompany, { color: colors.textMuted, fontSize: fontSizes.base, fontFamily }]} numberOfLines={1}>
-                  {card.company}
-                </Text>
-              )}
+            )}
 
-              {/* Category chips */}
-              {card.categories && card.categories.length > 0 && !isEditing && (
-                <View style={s.chipRow}>
-                  {card.categories.map(cat => (
-                    <AnimatedPressable key={cat} scaleDown={0.92}
-                      style={[s.chip, { backgroundColor: colors.accent }]}>
-                      <Text style={[s.chipText, { color: '#f7f7f7', fontSize: fontSizes.sm, fontFamily }]}>{cat}</Text>
-                    </AnimatedPressable>
-                  ))}
+            {/* Category tags */}
+            {card.categories && card.categories.length > 0 && !isEditing && (
+              <View style={s.tagRow}>
+                {card.categories.map(cat => (
+                  <View key={cat} style={[s.tag, { backgroundColor: colors.border }]}>
+                    <Text style={[s.tagText, { color: colors.textMuted, fontSize: fontSizes.xs, fontFamily }]}>{cat}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Quick info — show first available field */}
+            {!isEditing && (() => {
+              if (card.phone) return (
+                <View style={s.quickInfo}>
+                  <Pressable onPress={(e) => { e.stopPropagation(); Linking.openURL(`tel:${card.phone}`); }}>
+                    <View style={s.field}>
+                      <View style={s.fieldLabel}>
+                        <Ionicons name="call-outline" size={14} color={colors.textMuted} />
+                        <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.sm, fontFamily }]}>Phone</Text>
+                      </View>
+                      <Text style={[s.value, { color: colors.link, fontSize: fontSizes.base, fontFamily, textDecorationLine: 'underline' }]} numberOfLines={1}>{card.phone}</Text>
+                    </View>
+                  </Pressable>
                 </View>
-              )}
-
-              {/* Quick info — show first available field */}
-              {!isEditing && (() => {
-                if (card.phone) return (
-                  <View style={s.quickInfo}>
-                    <Pressable onPress={(e) => { e.stopPropagation(); Linking.openURL(`tel:${card.phone}`); }}>
-                      <View style={s.field}>
-                        <View style={s.fieldLabel}>
-                          <Ionicons name="call-outline" size={14} color={colors.textMuted} />
-                          <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.sm, fontFamily }]}>Phone</Text>
-                        </View>
-                        <Text style={[s.value, { color: colors.link, fontSize: fontSizes.base, fontFamily, textDecorationLine: 'underline' }]} numberOfLines={1}>{card.phone}</Text>
+              );
+              if (card.email) return (
+                <View style={s.quickInfo}>
+                  <Pressable onPress={(e) => { e.stopPropagation(); Linking.openURL(`mailto:${card.email}`); }}>
+                    <View style={s.field}>
+                      <View style={s.fieldLabel}>
+                        <Ionicons name="mail-outline" size={14} color={colors.textMuted} />
+                        <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.sm, fontFamily }]}>Email</Text>
                       </View>
-                    </Pressable>
-                  </View>
-                );
-                if (card.email) return (
-                  <View style={s.quickInfo}>
-                    <Pressable onPress={(e) => { e.stopPropagation(); Linking.openURL(`mailto:${card.email}`); }}>
-                      <View style={s.field}>
-                        <View style={s.fieldLabel}>
-                          <Ionicons name="mail-outline" size={14} color={colors.textMuted} />
-                          <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.sm, fontFamily }]}>Email</Text>
-                        </View>
-                        <Text style={[s.value, { color: colors.link, fontSize: fontSizes.base, fontFamily, textDecorationLine: 'underline' }]} numberOfLines={1}>{card.email}</Text>
+                      <Text style={[s.value, { color: colors.link, fontSize: fontSizes.base, fontFamily, textDecorationLine: 'underline' }]} numberOfLines={1}>{card.email}</Text>
+                    </View>
+                  </Pressable>
+                </View>
+              );
+              if (card.address) return (
+                <View style={s.quickInfo}>
+                  <Pressable onPress={(e) => { e.stopPropagation(); Linking.openURL(`maps:0,0?q=${encodeURIComponent(card.address!)}`); }}>
+                    <View style={s.field}>
+                      <View style={s.fieldLabel}>
+                        <Ionicons name="location-outline" size={14} color={colors.textMuted} />
+                        <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.sm, fontFamily }]}>Address</Text>
                       </View>
-                    </Pressable>
-                  </View>
-                );
-                if (card.address) return (
-                  <View style={s.quickInfo}>
-                    <Pressable onPress={(e) => { e.stopPropagation(); Linking.openURL(`maps:0,0?q=${encodeURIComponent(card.address!)}`); }}>
-                      <View style={s.field}>
-                        <View style={s.fieldLabel}>
-                          <Ionicons name="location-outline" size={14} color={colors.textMuted} />
-                          <Text style={[s.label, { color: colors.textMuted, fontSize: fontSizes.sm, fontFamily }]}>Address</Text>
-                        </View>
-                        <Text style={[s.value, { color: colors.link, fontSize: fontSizes.base, fontFamily, textDecorationLine: 'underline' }]} numberOfLines={1}>{card.address}</Text>
-                      </View>
-                    </Pressable>
-                  </View>
-                );
-                return null;
-              })()}
-            </View>
+                      <Text style={[s.value, { color: colors.link, fontSize: fontSizes.base, fontFamily, textDecorationLine: 'underline' }]} numberOfLines={1}>{card.address}</Text>
+                    </View>
+                  </Pressable>
+                </View>
+              );
+              return null;
+            })()}
+          </View>
 
             {card.card_image_url && (
               <Pressable onPress={(e) => {
@@ -534,7 +598,7 @@ export default function CollectionScreen() {
               }}>
                 <Image
                   source={{ uri: card.card_image_url }}
-                  style={s.cardThumb}
+                  style={[s.cardThumb, { borderColor: colors.border }]}
                   resizeMode="cover"
                 />
               </Pressable>
@@ -675,18 +739,11 @@ export default function CollectionScreen() {
 
               <View style={[s.actionGrid, { borderTopColor: colors.border }]}>
                 <View style={s.actionRow}>
-                  <AnimatedPressable onPress={() => shareCard(card)} scaleDown={0.95}
-                    style={[s.actionBtn, { flex: 1, backgroundColor: colors.border }]}>
-                    <View style={s.actionBtnInner}>
-                      <Ionicons name="share-outline" size={16} color={colors.text} />
-                      <Text style={[s.actionBtnText, { color: colors.text, fontSize: fontSizes.base, fontFamily }]}>Share</Text>
-                    </View>
-                  </AnimatedPressable>
                   <AnimatedPressable onPress={() => shareAsContact(card)} scaleDown={0.95}
                     style={[s.actionBtn, { flex: 1, backgroundColor: colors.border }]}>
                     <View style={s.actionBtnInner}>
                       <Ionicons name="person-add-outline" size={16} color={colors.text} />
-                      <Text style={[s.actionBtnText, { color: colors.text, fontSize: fontSizes.base, fontFamily }]}>Contact</Text>
+                      <Text style={[s.actionBtnText, { color: colors.text, fontSize: fontSizes.base, fontFamily }]}>Add or Share Contact</Text>
                     </View>
                   </AnimatedPressable>
                 </View>
@@ -908,11 +965,11 @@ export default function CollectionScreen() {
 
           {/* View/Hide Details toggle - always at bottom */}
           {!isEditing && (
-            <View style={[s.detailsToggle, { borderTopColor: colors.border }]}>
-              <Text style={[s.detailsText, { color: colors.textMuted, fontSize: fontSizes.base, fontFamily }]}>
-                {isExpanded ? 'Hide Details' : 'View Details'}
+            <View style={s.detailsToggle}>
+              <Text style={[s.detailsText, { color: colors.link, fontSize: fontSizes.sm, fontFamily }]}>
+                {isExpanded ? 'Hide details' : 'View details'}
               </Text>
-              <ChevronAnimated expanded={isExpanded} color={colors.textMuted} />
+              <ChevronAnimated expanded={isExpanded} color={colors.link} />
             </View>
           )}
         </AnimatedPressable>
@@ -923,7 +980,7 @@ export default function CollectionScreen() {
   if (loading) {
     return (
       <View style={[s.center, { backgroundColor: colors.bg }]}>
-        <ActivityIndicator size="large" color={colors.link} />
+        <StashLoader message="Loading your stash..." />
       </View>
     );
   }
@@ -947,36 +1004,59 @@ export default function CollectionScreen() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.link} progressViewOffset={headerHeight} />
         }
-        ListHeaderComponent={filtersActive ? (
-          <View style={[s.activeFilterBar, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-            <View style={s.activeFilterBarContent}>
-              <Ionicons name="funnel" size={14} color={colors.accent} />
-              <Text style={[s.activeFilterText, { color: colors.text, fontSize: fontSizes.sm, fontFamily }]} numberOfLines={1}>
-                {filterSummary}
-              </Text>
-            </View>
-            <View style={s.activeFilterBarActions}>
-              {activeFilters.length > 0 && (
-                <Pressable onPress={shareFilteredCards} style={s.activeFilterShareBtn} hitSlop={8}>
-                  <Ionicons name="share-outline" size={16} color={colors.accent} />
-                </Pressable>
-              )}
-              <Pressable
-                onPress={() => { setActiveFilters([]); setSortBy('recent'); }}
-                style={s.activeFilterClearBtn}
-                hitSlop={8}
-              >
-                <Ionicons name="close-circle" size={16} color={colors.textMuted} />
-                <Text style={[s.activeFilterClearText, { color: colors.textMuted, fontSize: fontSizes.sm, fontFamily }]}>Clear</Text>
-              </Pressable>
-            </View>
+        ListHeaderComponent={
+          <View>
+            {/* Search bar */}
+            {cards.length > 0 && (
+              <View style={[s.searchBar, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder }]}>
+                <Ionicons name="search-outline" size={18} color={colors.textMuted} />
+                <TextInput
+                  style={[s.searchInput, { color: colors.text, fontSize: fontSizes.base, fontFamily }]}
+                  placeholder="Search cards..."
+                  placeholderTextColor={colors.textMuted}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  autoCorrect={false}
+                  returnKeyType="search"
+                />
+                {searchQuery.length > 0 && (
+                  <Pressable onPress={() => setSearchQuery('')} hitSlop={8}>
+                    <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+                  </Pressable>
+                )}
+              </View>
+            )}
+            {/* Active filter bar */}
+            {filtersActive && (
+              <View style={[s.activeFilterBar, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                <View style={s.activeFilterBarContent}>
+                  <Ionicons name="funnel" size={14} color={colors.accent} />
+                  <Text style={[s.activeFilterText, { color: colors.text, fontSize: fontSizes.sm, fontFamily }]} numberOfLines={1}>
+                    {filterSummary}
+                  </Text>
+                </View>
+                <View style={s.activeFilterBarActions}>
+                  {activeFilters.length > 0 && (
+                    <Pressable onPress={shareFilteredCards} style={s.activeFilterShareBtn} hitSlop={8}>
+                      <Ionicons name="share-outline" size={16} color={colors.accent} />
+                    </Pressable>
+                  )}
+                  <Pressable
+                    onPress={() => { setActiveFilters([]); setSortBy('recent'); }}
+                    style={s.activeFilterClearBtn}
+                    hitSlop={8}
+                  >
+                    <Ionicons name="close-circle" size={16} color={colors.textMuted} />
+                    <Text style={[s.activeFilterClearText, { color: colors.textMuted, fontSize: fontSizes.sm, fontFamily }]}>Clear</Text>
+                  </Pressable>
+                </View>
+              </View>
+            )}
           </View>
-        ) : null}
+        }
         ListEmptyComponent={
           <View style={s.emptyState}>
-            <View style={[s.iconCircle, { backgroundColor: colors.accent + '30' }]}>
-              <Ionicons name="layers-outline" size={36} color={colors.accent} />
-            </View>
+            <StackedCardsIcon size={160} accent={colors.accent} />
             <Text style={[s.emptyTitle, { color: colors.text, fontSize: fontSizes.xl, fontFamily }]}>
               {activeFilters.length > 0 ? 'No cards match these filters' : 'No cards yet'}
             </Text>
@@ -1214,6 +1294,20 @@ const s = StyleSheet.create({
   },
   listContent: { paddingHorizontal: 16 },
   // Active filter pill bar
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 12,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    padding: 0,
+  },
   activeFilterBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1346,7 +1440,6 @@ const s = StyleSheet.create({
   card: {
     borderWidth: 0.5,
     borderRadius: 8,
-    overflow: 'hidden',
     padding: 16,
     marginBottom: 12,
   },
@@ -1359,13 +1452,21 @@ const s = StyleSheet.create({
     overflow: 'hidden',
   },
   cardThumb: {
-    width: 120,
-    height: 120,
-    borderRadius: 8,
-    marginLeft: 8,
+    width: 140,
+    height: 85,
+    borderRadius: 6,
+    borderWidth: 0.5,
+    marginLeft: 12,
   },
   cardName: { fontWeight: '700' },
   cardCompany: { marginTop: 2 },
+  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 },
+  tag: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  tagText: { fontWeight: '500' },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
   chip: {
     paddingHorizontal: 10,
@@ -1395,15 +1496,11 @@ const s = StyleSheet.create({
   detailsToggle: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginTop: 16,
-    paddingTop: 16,
-    paddingBottom: 2,
-    borderTopWidth: 1,
+    gap: 4,
+    marginTop: 12,
   },
   detailsText: {
-    fontWeight: '600',
+    fontWeight: '500',
   },
   expandedContent: {
     marginTop: 12,
@@ -1485,15 +1582,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  emptyState: { alignItems: 'center', paddingTop: 60 },
-  iconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
+  emptyState: { alignItems: 'center', paddingTop: 40 },
   emptyTitle: { fontWeight: '600', marginBottom: 4 },
   emptySub: { textAlign: 'center' },
 });

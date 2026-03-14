@@ -5,7 +5,7 @@ const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const FUNCTION_URL = `${SUPABASE_URL}/functions/v1/parse-card`;
 
 // Edge Functions gateway requires JWT-format anon key (not sb_publishable_ format)
-const EDGE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljY3lpYXZhaGtrcm9kd3drYWltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5NDM4ODcsImV4cCI6MjA4NjUxOTg4N30.OVilPDzsTtyIokJ8rl93MSBuuPib_3-MdLkNeTHNtFM';
+const EDGE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_EDGE_KEY!;
 
 async function callParseFunction(body: Record<string, unknown>): Promise<ParsedCard> {
   const { data: { session } } = await supabase.auth.getSession();
